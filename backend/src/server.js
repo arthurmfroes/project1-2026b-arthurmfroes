@@ -36,6 +36,6 @@ app.use((req, res, next) => {
   res.sendFile(path.join(frontendPath, 'index.html'));
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor rodando com sucesso em http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Servidor rodando com sucesso em http://0.0.0.0:${PORT}`);
 });
