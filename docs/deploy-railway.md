@@ -20,7 +20,7 @@ Não é necessário clonar o código ou instalar dependências na sua máquina l
 ### Passo 1: Tornar o Pacote Público no GHCR (Apenas 1 vez no GitHub)
 
 1. Acesse o seu repositório no GitHub.
-2. No menu lateral direito, clique no pacote publicado em **Packages** (ou acesse `https://github.com/users/<seu-usuario>/packages/container/package/project1-2026b-arthurmfroes`).
+2. No menu lateral direito, clique no pacote publicado em **Packages** (ou acesse `https://github.com/orgs/elc1090/packages/container/package/project1-2026b-arthurmfroes`).
 3. Vá em **Package Settings** (no rodapé direito).
 4. Em **Danger Zone** → **Change package visibility**, altere de *Private* para **Public**.
 
@@ -32,7 +32,7 @@ Não é necessário clonar o código ou instalar dependências na sua máquina l
 2. Clique em **+ New Project** → selecione **Deploy from Docker Image**.
 3. No campo da imagem, cole o endereço público do seu GHCR:
    ```text
-   ghcr.io/arthurmfroes/project1-2026b-arthurmfroes:latest
+   ghcr.io/elc1090/project1-2026b-arthurmfroes:latest
    ```
 4. Clique em **Deploy**.
 
