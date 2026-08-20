@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="pt-BR" class="h-full">
+<head>
+  <meta charset="utf-8">
+  <title>Meu Desempenho - Painel do Estudante</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Componente JS do Aluno -->
+  <script src="./aluno.js"></script>
+  <!-- Alpine.js v3 CDN (defer) -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <style>
+    body {
+      background-color: #f5f5f2;
+      background-image: 
+        linear-gradient(rgba(17, 17, 17, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(17, 17, 17, 0.035) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+  </style>
+</head>
+<body class="min-h-full text-[#111111] font-sans antialiased selection:bg-[#5d3fd3] selection:text-white" x-data="alunoApp()" x-init="init()">
+  
+  <main class="max-w-3xl w-full mx-auto px-4 py-8 space-y-6">
+    
+    <!-- HEADER DA PÁGINA DEDICADA DO ALUNO -->
+    <header class="flex items-center justify-between border-b-2 border-[#111111] pb-4">
+      <div>
+        <a href="/" class="text-xs font-black text-[#5d3fd3] hover:underline uppercase tracking-wider">← Voltar para o Desafio do Dia</a>
+        <h1 class="text-2xl sm:text-4xl font-black text-[#111111] mt-1 tracking-tight">Painel do Estudante</h1>
+        <p class="text-xs text-[#5f5f5a] font-medium">Consulte suas estatísticas e revise desafios passados para estudar.</p>
+      </div>
+    </header>
+
+    <!-- SEÇÃO 1: ESCOLHA / IDENTIFICAÇÃO DO ALUNO -->
+    <section class="bg-white rounded-[22px] p-6 border-[3px] border-[#111111] shadow-[7px_7px_0px_#111111] space-y-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-4">
+          <span class="flex items-center justify-center w-9 h-9 rounded-full bg-[#111111] text-[#f5f5f2] font-black text-sm">👤</span>
+          <div>
+            <h2 class="text-xl font-extrabold text-[#111111]">Identificação do Estudante</h2>
+            <p class="text-sm text-[#5f5f5a]">Selecione seu nome para visualizar seu histórico pessoal.</p>
+          </div>
+        </div>
+
+        <!-- BADGE DE ALUNO CONFIRMADO -->
+        <template x-if="isStudentConfirmed">
+          <div class="flex items-center gap-2 bg-[#f0fdf4] px-3.5 py-1.5 rounded-xl border-2 border-[#166534] shadow-[2px_2px_0px_#166534]">
+            <span class="text-xs font-black text-[#166534]" x-text="`✓ ${confirmedStudentName}`"></span>
+            <button @click="clearSelection()" type="button" class="text-[11px] font-black text-[#9a3412] hover:underline ml-1">
+              [Trocar]
+            </button>
+          </div>
+        </template>
+      </div>
+
+      <!-- BUSCA E SUGESTÕES (EXIBIDO SE AINDA NÃO SELECIONOU) -->
+      <template x-if="!isStudentConfirmed">
+        <div class="relative space-y-3">
+          <label for="student-input" class="block text-xs font-black uppercase tracking-wider text-[#111111]">Nome do Estudante</label>
+          <div class="flex items-center gap-2">
+            <input 
+              type="text" 
+              id="student-input"
+              x-model="studentQuery" 
+              @input="onStudentInput()" 
+              @keydown.enter.prevent="confirmManualName()"
+              placeholder="Digite para buscar seu nome..." 
+              autocomplete="off"
+              class="flex-1 px-4 py-3 rounded-xl border-[2px] border-[#111111] bg-[#fffafa] shadow-[3px_3px_0px_#111111] focus:outline-none focus:ring-2 focus:ring-[#5d3fd3] text-[#111111] font-medium"
+            >
+            <button 
+              @click="confirmManualName()" 
+              type="button" 
+              class="px-4 py-3 bg-[#5d3fd3] text-white font-black text-xs rounded-xl border-2 border-[#111111] shadow-[3px_3px_0px_#111111] hover:bg-[#4c1d95] transition-all whitespace-nowrap"
+            >
+              Confirmar Nome
+            </button>
+          </div>
+          
+          <!-- SUGESTÕES DROPDOWN -->
+          <template x-if="matchingStudents.length > 0 && showSuggestions">
+            <ul class="absolute z-30 w-full mt-1 bg-white rounded-xl border-[2px] border-[#111111] shadow-[5px_5px_0px_#111111] max-h-52 overflow-y-auto divide-y divide-slate-200">
+              <template x-for="student in matchingStudents" :key="student.student_id">
+                <li>
+                  <button 
+                    type="button" 
+                    @click="selectStudent(student)" 
+                    class="w-full text-left px-4 py-3 hover:bg-[#5d3fd3] hover:text-white font-bold text-sm text-[#111111] transition-colors flex items-center justify-between"
+                  >
+                    <span x-text="student.display_name"></span>
+                    <span class="text-xs font-mono opacity-60">Selecionar ↵</span>
+                  </button>
+                </li>
+              </template>
+            </ul>
+          </template>
+
+          <p class="text-xs text-[#5f5f5a] font-medium" x-text="studentStatusHint"></p>
+        </div>
+      </template>
+    </section>
+
+    <!-- MENSAGEM QUANDO NENHUM ALUNO FOI SELECIONADO -->
+    <template x-if="loaded && !hasSelectedStudent">
+      <div class="bg-[#fffafa] rounded-[22px] p-8 border-[3px] border-[#111111] shadow-[7px_7px_0px_#111111] text-center space-y-3">
+        <h3 class="text-xl font-black text-[#111111]">Identifique-se para acessar o painel</h3>
+        <p class="text-sm font-medium text-[#5f5f5a] max-w-md mx-auto">
+          Selecione seu nome na caixa acima para consultar seu histórico e estudar os desafios já respondidos.
+        </p>
+      </div>
+    </template>
+
+    <!-- CONTEÚDO PRINCIPAL DO PAINEL DO ALUNO -->
+    <template x-if="loaded && hasSelectedStudent">
+      <div class="space-y-6">
+
+        <!-- PAINEL DE DESEMPENHO E ESTATÍSTICAS -->
+        <section class="bg-white rounded-[22px] p-6 sm:p-8 border-[3px] border-[#111111] shadow-[7px_7px_0px_#111111] space-y-6">
+          <div class="flex items-center justify-between border-b-2 border-[#111111] pb-4">
+            <div>
+              <h2 class="text-2xl font-black text-[#111111]">Meu Desempenho</h2>
+              <p class="text-xs text-[#5f5f5a] font-medium mt-0.5">Visão geral da sua evolução no curso.</p>
+            </div>
+            <span class="px-3.5 py-1 bg-[#f5f5f2] border-2 border-[#111111] rounded-full font-bold text-xs" x-text="studentStatsName || confirmedStudentName"></span>
+          </div>
+
+          <template x-if="!studentStats || studentStats.stats.total_submitted === 0">
+            <div class="text-center py-8 space-y-2 border-2 border-dashed border-[#111111] rounded-2xl bg-[#fffafa] p-6">
+              <p class="text-sm font-bold text-[#111111]">Nenhuma resposta registrada ainda.</p>
+              <p class="text-xs text-[#5f5f5a]">Acesse a página principal e responda aos desafios para acumular seu histórico aqui.</p>
+            </div>
+          </template>
+
+          <template x-if="studentStats && studentStats.stats.total_submitted > 0">
+            <div class="space-y-6">
+              
+              <!-- CARDS DE ESTATÍSTICAS -->
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div class="bg-[#f5f5f2] p-4 rounded-xl border-2 border-[#111111] text-center">
+                  <span class="block text-3xl font-black text-[#111111]" x-text="studentStats.stats.total_submitted">0</span>
+                  <span class="text-[10px] font-black uppercase tracking-wider text-[#5f5f5a]">Respondidos</span>
+                </div>
+                <div class="bg-[#f0fdf4] p-4 rounded-xl border-2 border-[#166534] text-center">
+                  <span class="block text-3xl font-black text-[#166534]" x-text="studentStats.stats.correct_count">0</span>
+                  <span class="text-[10px] font-black uppercase tracking-wider text-[#166534]">Acertos</span>
+                </div>
+                <div class="bg-[#fef2f2] p-4 rounded-xl border-2 border-[#9a3412] text-center">
+                  <span class="block text-3xl font-black text-[#9a3412]" x-text="studentStats.stats.incorrect_count">0</span>
+                  <span class="text-[10px] font-black uppercase tracking-wider text-[#9a3412]">Erros</span>
+                </div>
+                <div class="bg-[#faf5ff] p-4 rounded-xl border-2 border-[#5d3fd3] text-center">
+                  <span class="block text-3xl font-black text-[#5d3fd3]" x-text="`${studentStats.stats.accuracy_percentage}%`">0%</span>
+                  <span class="text-[10px] font-black uppercase tracking-wider text-[#5d3fd3]">Precisão</span>
+                </div>
+              </div>
+
+              <!-- LISTA DE HISTÓRICO DE RESPOSTAS -->
+              <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                  <h3 class="text-xs font-black uppercase tracking-wider text-[#5f5f5a]">Histórico de Desafios Respondidos (Clique para Estudar):</h3>
+                </div>
+
+                <div class="space-y-2.5">
+                  <template x-for="item in studentStats.stats.history" :key="item.submission_id">
+                    <div 
+                      @click="openStudyModal(item)" 
+                      class="flex items-center justify-between p-4 rounded-xl border-2 font-medium text-xs shadow-[3px_3px_0px_#111111] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[5px_5px_0px_#111111] cursor-pointer transition-all"
+                      :class="item.is_correct === 1 ? 'bg-[#f0fdf4] border-[#166534] text-[#166534]' : 'bg-[#fff7ed] border-[#9a3412] text-[#9a3412]'"
+                    >
+                      <div class="flex items-center gap-3">
+                        <span class="font-black text-sm" x-text="item.is_correct === 1 ? '✓ Acertou' : '✕ Errou'"></span>
+                        <div>
+                          <span class="font-black text-sm text-[#111111] block" x-text="item.challenge_title"></span>
+                          <span class="text-[11px] text-[#5f5f5a] font-medium" x-text="new Date(item.submitted_at).toLocaleString('pt-BR')"></span>
+                        </div>
+                      </div>
+
+                      <div class="flex items-center gap-3">
+                        <span class="px-2.5 py-1 rounded-lg border border-[#111111] bg-white text-[#111111] font-bold" x-text="item.category"></span>
+                        <button type="button" class="px-3 py-1.5 bg-[#5d3fd3] text-white font-black text-xs rounded-lg border border-[#111111] shadow-[1px_1px_0px_#111111]">
+                          📖 Estudar Questão
+                        </button>
+                      </div>
+                    </div>
+                  </template>
+                </div>
+              </div>
+
+            </div>
+          </template>
+        </section>
+
+        <!-- MODAL DE ESTUDO COMPLETO DO DESAFIO (REVISÃO DE CONTEÚDO) -->
+        <template x-if="studyModal.isOpen && studyModal.data">
+          <div class="fixed inset-0 bg-[#111111]/70 z-50 flex items-center justify-center p-4 overflow-y-auto" @keydown.escape.window="studyModal.close()">
+            <div class="bg-white rounded-[22px] max-w-2xl w-full p-6 sm:p-8 space-y-5 border-[3px] border-[#111111] shadow-[10px_10px_0px_#111111] my-8 max-h-[90vh] overflow-y-auto">
+              
+              <!-- HEADER DO MODAL -->
+              <div class="flex items-center justify-between border-b-2 border-[#111111] pb-3">
+                <h3 class="text-xl font-black text-[#111111]" x-text="studyModal.title"></h3>
+                <button @click="studyModal.close()" type="button" class="text-lg font-black text-[#5f5f5a] hover:text-[#111111]">✕</button>
+              </div>
+
+              <!-- CABEÇALHO DA SUBMISSÃO -->
+              <div class="p-4 bg-[#f5f5f2] rounded-xl border-2 border-[#111111] flex items-center justify-between flex-wrap gap-2 text-xs">
+                <div>
+                  <p class="text-[11px] uppercase font-black text-[#5d3fd3]" x-text="`Categoria: ${studyModal.data.category}`"></p>
+                  <p class="font-mono text-[#5f5f5a] mt-0.5" x-text="`Respondido em: ${new Date(studyModal.data.submitted_at).toLocaleString('pt-BR')}`"></p>
+                </div>
+                
+                <div class="flex items-center gap-2">
+                  <span class="font-mono font-bold text-xs" x-text="`Tempo: ${studyModal.data.elapsed_seconds}s`"></span>
+                  <span 
+                    class="px-3 py-1 rounded-md font-black text-xs border border-[#111111]"
+                    :class="studyModal.data.is_correct === 1 ? 'bg-[#f0fdf4] text-[#166534]' : 'bg-[#fff7ed] text-[#9a3412]'"
+                    x-text="studyModal.data.is_correct === 1 ? '✓ Resposta Correta' : '✕ Resposta Incorreta'"
+                  ></span>
+                </div>
+              </div>
+
+              <!-- ENUNCIADO E CÓDIGO DO DESAFIO INTEIRO -->
+              <template x-if="studyModal.data.challengeObj">
+                <div class="space-y-3 border-2 border-[#111111] p-5 rounded-xl bg-[#fffafa]">
+                  <h4 class="font-black text-xs uppercase text-[#5d3fd3] tracking-wider">Desafio Completo:</h4>
+                  
+                  <template x-for="(b, i) in [...(studyModal.data.challengeObj.intro || []), ...(studyModal.data.challengeObj.prompt || [])]" :key="i">
+                    <div class="text-sm text-[#111111] leading-relaxed">
+                      <template x-if="b.type === 'markdown'">
+                        <p class="font-medium text-sm text-[#111111]" x-text="b.content"></p>
+                      </template>
+
+                      <template x-if="b.type === 'question'">
+                        <div class="p-3 bg-white border border-[#111111] rounded-lg font-bold text-xs text-[#111111] my-2">
+                          <span class="block text-[10px] font-black uppercase text-[#5d3fd3] tracking-wider mb-0.5">Pergunta</span>
+                          <p x-text="b.content"></p>
+                        </div>
+                      </template>
+
+                      <template x-if="b.type === 'code'">
+                        <div class="rounded-xl overflow-hidden bg-[#111111] text-[#f5f5f2] border border-[#111111] my-2">
+                          <div class="px-3 py-1 bg-[#222222] text-[10px] font-mono text-[#f5f5f2]/70 uppercase" x-text="b.language || 'code'"></div>
+                          <pre class="p-3 text-xs font-mono overflow-x-auto"><code x-text="b.content"></code></pre>
+                        </div>
+                      </template>
+                    </div>
+                  </template>
+                </div>
+              </template>
+
+              <!-- SUA RESPOSTA & GABARITO -->
+              <div class="space-y-3">
+                <h4 class="font-black text-xs uppercase tracking-wider text-[#5f5f5a]">Sua Submissão & Gabarito:</h4>
+                
+                <div class="space-y-3">
+                  <template x-for="field in studyModal.data.formattedFields" :key="field.id">
+                    <div class="p-4 rounded-xl border-2 border-[#111111] space-y-2"
+                         :class="field.type === 'single_choice' ? (field.is_correct ? 'bg-[#f0fdf4] border-[#166534]' : 'bg-[#fff7ed] border-[#9a3412]') : 'bg-white'">
+                      
+                      <p class="text-xs font-black text-[#111111]" x-text="field.label"></p>
+                      
+                      <!-- ESCOLHA ÚNICA -->
+                      <template x-if="field.type === 'single_choice'">
+                        <div class="space-y-1.5 text-xs">
+                          <p class="font-bold" :class="field.is_correct ? 'text-[#166534]' : 'text-[#9a3412]'">
+                            <span>Sua Escolha: </span>
+                            <span x-text="field.user_val_label"></span>
+                          </p>
+                          <template x-if="!field.is_correct && field.correct_val_label">
+                            <p class="text-[#166534] font-bold">
+                              <span>✓ Gabarito Correto: </span>
+                              <span x-text="field.correct_val_label"></span>
+                            </p>
+                          </template>
+                        </div>
+                      </template>
+
+                      <!-- RACIOCÍNIO ENVIADO -->
+                      <template x-if="field.type !== 'single_choice'">
+                        <div class="p-3 bg-[#f5f5f2] rounded-lg border border-[#111111] font-mono text-xs text-[#111111] whitespace-pre-wrap" x-text="field.user_val_text"></div>
+                      </template>
+                    </div>
+                  </template>
+                </div>
+              </div>
+
+              <!-- FEEDBACK EXPLICATIVO DO PROFESSOR / SISTEMA -->
+              <template x-if="studyModal.data.feedbackMessages && studyModal.data.feedbackMessages.length > 0">
+                <div class="p-4 bg-[#e0e7ff] rounded-xl border-2 border-[#3730a3] text-xs text-[#3730a3] space-y-1">
+                  <strong class="font-black uppercase tracking-wider block">Explanation / Feedback:</strong>
+                  <template x-for="msg in studyModal.data.feedbackMessages" :key="msg">
+                    <p class="font-medium leading-relaxed" x-text="msg"></p>
+                  </template>
+                </div>
+              </template>
+
+              <div class="pt-2">
+                <button @click="studyModal.close()" type="button" class="w-full py-3.5 bg-[#111111] text-white font-black rounded-xl border-2 border-[#111111] text-sm shadow-[3px_3px_0px_#111111]">
+                  Fechar Revisão
+                </button>
+              </div>
+            </div>
+          </div>
+        </template>
+
+      </div>
+    </template>
+
+    <!-- FOOTER -->
+    <footer class="mt-12 py-6 border-t-2 border-[#111111] text-center text-xs font-bold text-[#5f5f5a]">
+      <p>Desenvolvimento de Software para Web &bull; UFSM</p>
+    </footer>
+
+  </main>
+
+</body>
+</html>

@@ -1,0 +1,21 @@
+# Node dependencies
+node_modules/
+backend/node_modules/
+
+# Environment variables
+.env
+.env.local
+
+# Database runtime data (ignore SQLite DB instances created at runtime, keep seed if applicable)
+backend/data/*.sqlite
+backend/data/*.sqlite-journal
+backend/data/*.sqlite-wal
+backend/data/*.sqlite-shm
+
+# Logs
+*.log
+npm-debug.log*
+
+# Operating System files
+.DS_Store
+Thumbs.db

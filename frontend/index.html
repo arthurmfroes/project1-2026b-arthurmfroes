@@ -1,0 +1,393 @@
+<!doctype html>
+<html lang="pt-BR" class="h-full">
+<head>
+  <meta charset="utf-8">
+  <title>Desafio do Dia - Desenvolvimento de Software para Web</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Componente JS do Alpine -->
+  <script src="./app.js"></script>
+  <!-- Alpine.js v3 CDN (defer) -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <style>
+    body {
+      background-color: #f5f5f2;
+      background-image: 
+        linear-gradient(rgba(17, 17, 17, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(17, 17, 17, 0.035) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+  </style>
+</head>
+<body class="min-h-full text-[#111111] font-sans antialiased selection:bg-[#5d3fd3] selection:text-white" x-data="studentApp()" x-init="init()">
+  
+  <main class="max-w-3xl w-full mx-auto px-4 py-8 space-y-6">
+    
+    <!-- HERO HEADER (ESTÉTICA NEO-BRUTALISTA ORIGINAL) -->
+    <header class="bg-[#111111] text-[#f5f5f2] rounded-[28px] p-8 sm:p-10 border-[3px] border-[#111111] shadow-[7px_7px_0px_#111111] relative overflow-hidden">
+      <div class="relative w-14 h-14 mb-5">
+        <span class="absolute inset-0 rounded-full border-[8px] border-[#f5f5f2]"></span>
+        <span class="absolute inset-0 rounded-full border-[8px] border-[#5d3fd3] translate-x-4 translate-y-4"></span>
+      </div>
+
+      <p class="text-[#5d3fd3] font-black uppercase text-xs tracking-widest mb-2">
+        Desafio do Dia - Desenvolvimento de Software para Web
+      </p>
+      <h1 class="text-4xl sm:text-6xl font-black uppercase tracking-tighter leading-none mb-3">
+        Desafio do Dia
+      </h1>
+      <p class="text-[#f5f5f2]/80 text-base sm:text-lg max-w-md">
+        Um desafio rápido. Um aprendizado que permanece.
+      </p>
+    </header>
+
+    <!-- SEÇÃO 1: ESCOLHA SEU NOME -->
+    <section class="bg-white rounded-[22px] p-6 border-[3px] border-[#111111] shadow-[7px_7px_0px_#111111] space-y-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-4">
+          <span class="flex items-center justify-center w-9 h-9 rounded-full bg-[#111111] text-[#f5f5f2] font-black text-sm">1</span>
+          <div>
+            <h2 class="text-xl font-extrabold text-[#111111]">Escolha seu nome</h2>
+            <p class="text-sm text-[#5f5f5a]">Selecione um nome na lista para desbloquear o desafio.</p>
+          </div>
+        </div>
+
+        <!-- BADGE DE ALUNO CONFIRMADO -->
+        <template x-if="isStudentConfirmed">
+          <div class="flex items-center gap-2 bg-[#f0fdf4] px-3.5 py-1.5 rounded-xl border-2 border-[#166534] shadow-[2px_2px_0px_#166534]">
+            <span class="text-xs font-black text-[#166534]" x-text="`✓ ${confirmedStudentName}`"></span>
+            <button @click="clearSelection()" type="button" class="text-[11px] font-black text-[#9a3412] hover:underline ml-1">
+              [Trocar]
+            </button>
+          </div>
+        </template>
+      </div>
+
+      <!-- BUSCA E LISTA DE SUGESTÕES (SÓ EXIBIDO SE AINDA NÃO SELECIONOU) -->
+      <template x-if="!isStudentConfirmed">
+        <div class="relative space-y-3">
+          <label for="student-input" class="block text-xs font-black uppercase tracking-wider text-[#111111]">Nome do Estudante</label>
+          <div class="flex items-center gap-2">
+            <input 
+              type="text" 
+              id="student-input"
+              x-model="studentQuery" 
+              @input="onStudentInput()" 
+              @keydown.enter.prevent="confirmManualName()"
+              placeholder="Digite para buscar seu nome..." 
+              autocomplete="off"
+              class="flex-1 px-4 py-3 rounded-xl border-[2px] border-[#111111] bg-[#fffafa] shadow-[3px_3px_0px_#111111] focus:outline-none focus:ring-2 focus:ring-[#5d3fd3] text-[#111111] font-medium"
+            >
+
+            <template x-if="appConfig.allow_manual_name && studentQuery.trim().length > 0">
+              <button 
+                @click="confirmManualName()" 
+                type="button" 
+                class="px-4 py-3 bg-[#5d3fd3] text-white font-black text-xs rounded-xl border-2 border-[#111111] shadow-[3px_3px_0px_#111111] hover:bg-[#4c1d95] transition-all whitespace-nowrap"
+              >
+                Confirmar Nome
+              </button>
+            </template>
+          </div>
+          
+          <!-- SUGESTÕES DROPDOWN -->
+          <template x-if="matchingStudents.length > 0 && showSuggestions">
+            <ul class="absolute z-30 w-full mt-1 bg-white rounded-xl border-[2px] border-[#111111] shadow-[5px_5px_0px_#111111] max-h-52 overflow-y-auto divide-y divide-slate-200">
+              <template x-for="student in matchingStudents" :key="student.student_id">
+                <li>
+                  <button 
+                    type="button" 
+                    @click="selectStudent(student)" 
+                    class="w-full text-left px-4 py-3 hover:bg-[#5d3fd3] hover:text-white font-bold text-sm text-[#111111] transition-colors flex items-center justify-between"
+                  >
+                    <span x-text="student.display_name"></span>
+                    <span class="text-xs font-mono opacity-60">Selecionar ↵</span>
+                  </button>
+                </li>
+              </template>
+            </ul>
+          </template>
+
+          <p class="text-xs text-[#5f5f5a] font-medium" x-text="studentStatusHint"></p>
+        </div>
+      </template>
+    </section>
+
+    <!-- MENSAGEM SE NENHUM ESTUDANTE FOI SELECIONADO -->
+    <template x-if="loaded && !hasSelectedStudent">
+      <div class="bg-[#fffafa] rounded-[22px] p-8 border-[3px] border-[#111111] shadow-[7px_7px_0px_#111111] text-center space-y-3">
+        <h3 class="text-xl font-black text-[#111111]">Identifique-se para acessar o desafio</h3>
+        <p class="text-sm font-medium text-[#5f5f5a] max-w-md mx-auto">
+          Selecione seu nome na lista acima para responder ao Desafio do Dia e consultar seu progresso.
+        </p>
+      </div>
+    </template>
+
+    <!-- CONTEÚDO EXIBIDO APENAS APÓS SELECIONAR UM ESTUDANTE -->
+    <template x-if="loaded && hasSelectedStudent">
+      <div class="space-y-6">
+
+        <!-- NAVEGAÇÃO DO ESTUDANTE (LINK PARA PÁGINA DEDICADA /aluno) -->
+        <div class="flex items-center justify-between border-b-2 border-[#111111] pb-3">
+          <span class="px-5 py-2.5 rounded-xl font-black text-xs sm:text-sm border-2 border-[#111111] bg-[#5d3fd3] text-white shadow-[3px_3px_0px_#111111]">
+            Desafio do Dia
+          </span>
+
+          <a 
+            href="/aluno" 
+            class="px-5 py-2.5 rounded-xl font-black text-xs sm:text-sm border-2 border-[#111111] bg-white hover:bg-slate-100 text-[#111111] shadow-[3px_3px_0px_#111111] transition-all flex items-center gap-2"
+          >
+            <span>📊 Meu Desempenho (/aluno)</span>
+            <template x-if="studentStats && studentStats.stats.total_submitted > 0">
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-[#5d3fd3] text-white" x-text="studentStats.stats.total_submitted"></span>
+            </template>
+          </a>
+        </div>
+
+        <!-- ABA 1: DESAFIO DO DIA -->
+        <template x-if="activeTab === 'challenge'">
+          <div class="space-y-6">
+
+            <!-- ESTADO VAZIO QUANDO NÃO HÁ DESAFIO HOJE -->
+            <template x-if="!currentChallenge">
+              <section class="bg-white rounded-[22px] p-6 sm:p-8 border-[3px] border-[#111111] shadow-[7px_7px_0px_#111111]">
+                <div class="text-center py-6 space-y-3 border-2 border-dashed border-[#111111] rounded-2xl bg-[#fffafa] p-6">
+                  <h2 class="text-2xl font-black text-[#111111]">Nenhum desafio disponível no momento</h2>
+                  <p class="text-sm font-medium text-[#5f5f5a]">
+                    <template x-if="nextChallengeDate">
+                      <span>O próximo desafio estará disponível em <strong class="text-[#5d3fd3]" x-text="formattedNextDate"></strong>.</span>
+                    </template>
+                    <template x-if="!nextChallengeDate">
+                      <span>Novos desafios estarão disponíveis em breve. Fique atento!</span>
+                    </template>
+                  </p>
+                </div>
+              </section>
+            </template>
+
+            <!-- SEÇÃO DO DESAFIO DO DIA (COM BLUR SOBRE O CONTEÚDO REAL QUANDO BLOQUEADO) -->
+            <template x-if="currentChallenge">
+              <div class="relative rounded-[22px] overflow-hidden">
+                
+                <!-- CARD COM O CONTEÚDO REAL DO DESAFIO (COM EFEITO BLUR QUANDO NÃO INICIADO OU QUANDO EXPIRADO) -->
+                <div class="space-y-6 transition-all duration-300"
+                     :class="(challengeHasTimer && !challengeStarted) || (challengeHasTimer && challengeStarted && timeExpired && !submissionFeedback) ? 'filter blur-md opacity-35 select-none pointer-events-none' : ''">
+                  
+                  <section class="bg-white rounded-[22px] p-6 sm:p-8 border-[3px] border-[#111111] shadow-[7px_7px_0px_#111111] space-y-6">
+                    
+                    <!-- HEADER DO DESAFIO -->
+                    <div class="border-b-2 border-[#111111] pb-4 space-y-3">
+                      <div class="flex items-center justify-between flex-wrap gap-2">
+                        <p class="text-xs font-black uppercase tracking-wider text-[#5d3fd3]" x-text="`Desafio do Dia • ${currentChallenge.date || ''}`"></p>
+                        
+                        <!-- CRONÔMETRO ATIVO -->
+                        <template x-if="challengeHasTimer">
+                          <div class="flex items-center gap-1.5 px-3 py-1 rounded-full font-mono text-sm font-black border-2 border-[#111111] shadow-[2px_2px_0px_#111111]"
+                               :class="timerWarning ? 'bg-[#ff4d4d] text-white animate-pulse' : 'bg-[#111111] text-[#f5f5f2]'">
+                            <span>⏱️</span>
+                            <span x-text="formattedTimer"></span>
+                          </div>
+                        </template>
+
+                        <template x-if="!challengeHasTimer">
+                          <span class="px-3 py-1 bg-[#f5f5f2] text-[#111111] font-bold rounded-full border border-[#111111] text-xs">
+                            Sem limite de tempo
+                          </span>
+                        </template>
+                      </div>
+
+                      <h2 class="text-2xl sm:text-4xl font-black tracking-tight text-[#111111]" x-text="currentChallenge.title"></h2>
+
+                      <!-- CATEGORIAS / TAGS -->
+                      <div class="flex items-center flex-wrap gap-2 pt-1">
+                        <span class="px-3 py-1 bg-[#e0e7ff] text-[#3730a3] font-bold rounded-lg border border-[#111111] text-xs" x-text="currentChallenge.category || 'Geral'"></span>
+                        <template x-for="topic in (currentChallenge.topics || [])" :key="topic">
+                          <span class="px-2.5 py-1 bg-[#f1f5f9] text-[#475569] font-medium rounded-lg text-xs" x-text="topic"></span>
+                        </template>
+                        <span class="px-3 py-1 bg-[#fef3c7] text-[#92400e] font-bold rounded-lg border border-[#111111] text-xs" x-text="currentChallenge.difficulty || 'Médio'"></span>
+                      </div>
+                    </div>
+
+                    <!-- INTRO E PROMPT DO DESAFIO -->
+                    <div class="space-y-4 text-[#111111] leading-relaxed">
+                      <template x-for="(block, idx) in challengeBlocks" :key="idx">
+                        <div>
+                          <template x-if="block.type === 'markdown'">
+                            <p class="text-base" x-text="block.content"></p>
+                          </template>
+                          <template x-if="block.type === 'question'">
+                            <div class="p-4 bg-[#fffafa] border-2 border-[#111111] shadow-[3px_3px_0px_#111111] rounded-xl font-bold text-[#111111]">
+                              <span class="block text-xs font-black uppercase text-[#5d3fd3] tracking-wider mb-1">Pergunta-Desafio</span>
+                              <p x-text="block.content"></p>
+                            </div>
+                          </template>
+                          <template x-if="block.type === 'code'">
+                            <div class="rounded-xl overflow-hidden bg-[#111111] text-[#f5f5f2] border-2 border-[#111111] shadow-[4px_4px_0px_#111111] my-3">
+                              <div class="px-4 py-1.5 bg-[#222222] text-xs font-mono text-[#f5f5f2]/70 uppercase tracking-wider border-b border-[#333333]" x-text="block.language || 'code'"></div>
+                              <pre class="p-4 text-xs sm:text-sm font-mono overflow-x-auto"><code><span x-text="block.content"></span></code></pre>
+                            </div>
+                          </template>
+                        </div>
+                      </template>
+                    </div>
+                  </section>
+
+                  <!-- SEÇÃO 2: FORMULÁRIO DE RESPOSTA -->
+                  <section class="bg-white rounded-[22px] p-6 sm:p-8 border-[3px] border-[#111111] shadow-[7px_7px_0px_#111111] space-y-6">
+                    <div class="flex items-center gap-4">
+                      <span class="flex items-center justify-center w-9 h-9 rounded-full bg-[#111111] text-[#f5f5f2] font-black text-sm">2</span>
+                      <div>
+                        <h2 class="text-xl font-extrabold text-[#111111]">Sua resposta</h2>
+                        <p class="text-sm text-[#5f5f5a]">Responda sem medo de errar!</p>
+                      </div>
+                    </div>
+
+                    <form @submit.prevent="submitResponse()" class="space-y-6">
+                      
+                      <!-- OPÇÕES DE ESCOLHA ÚNICA -->
+                      <template x-if="currentResponseModel && currentResponseModel.type === 'mixed'">
+                        <div class="space-y-6">
+                          <template x-for="field in currentResponseModel.fields" :key="field.id">
+                            <div>
+                              <template x-if="field.type === 'single_choice'">
+                                <fieldset class="space-y-3">
+                                  <legend class="text-sm font-black text-[#111111]" x-text="field.label"></legend>
+                                  <div class="grid grid-cols-1 gap-3">
+                                    <template x-for="option in field.options" :key="option.id">
+                                      <label class="flex items-center p-4 rounded-xl border-2 border-[#111111] bg-[#fffafa] hover:bg-[#5d3fd3]/10 transition-all shadow-[3px_3px_0px_#111111]"
+                                             :class="[
+                                               formValues[field.id] === option.id ? 'bg-[#5d3fd3]/15 ring-2 ring-[#5d3fd3]' : '',
+                                               hasSubmitted ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'
+                                             ]">
+                                        <input type="radio" :name="field.id" :value="option.id" x-model="formValues[field.id]" :disabled="hasSubmitted" class="text-[#5d3fd3] focus:ring-[#5d3fd3] disabled:cursor-not-allowed">
+                                        <span class="ml-3 font-black text-sm text-[#5d3fd3] uppercase" x-text="`${option.id})`"></span>
+                                        <span class="ml-2 text-sm text-[#111111] font-bold" x-text="option.label"></span>
+                                      </label>
+                                    </template>
+                                  </div>
+                                </fieldset>
+                              </template>
+
+                              <template x-if="field.type === 'open_text' || field.type === 'code'">
+                                <div class="space-y-1.5">
+                                  <label class="block text-sm font-black text-[#111111]" x-text="field.label"></label>
+                                  <textarea 
+                                    x-model="formValues[field.id]" 
+                                    rows="4" 
+                                    :disabled="hasSubmitted"
+                                    :placeholder="field.placeholder || ''"
+                                    class="w-full px-4 py-3 rounded-xl border-2 border-[#111111] bg-[#fffafa] shadow-[3px_3px_0px_#111111] focus:outline-none focus:ring-2 focus:ring-[#5d3fd3] text-sm font-medium disabled:opacity-75 disabled:cursor-not-allowed"
+                                    :class="field.type === 'code' ? 'font-mono bg-[#111111] text-[#f5f5f2]' : ''"
+                                  ></textarea>
+                                </div>
+                              </template>
+                            </div>
+                          </template>
+                        </div>
+                      </template>
+
+                      <!-- MENSAGEM DO FORMULÁRIO -->
+                      <template x-if="formMessage">
+                        <div class="p-4 rounded-xl text-sm font-bold border-2 border-[#111111] shadow-[3px_3px_0px_#111111]"
+                             :class="formMessageType === 'error' ? 'bg-[#fff7ed] text-[#9a3412]' : 'bg-[#f0fdf4] text-[#166534]'"
+                             x-text="formMessage"></div>
+                      </template>
+
+                      <!-- BOTÃO DE SUBMISSÃO (BLOQUEADO APÓS SUBMETER) -->
+                      <button 
+                        type="submit" 
+                        :disabled="submitting || hasSubmitted || (challengeHasTimer && timeExpired)"
+                        class="w-full py-3.5 px-6 rounded-xl bg-[#5d3fd3] hover:bg-[#4c1d95] text-white font-black text-base border-2 border-[#111111] shadow-[4px_4px_0px_#111111] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_#111111] active:translate-x-[1px] active:translate-y-[1px] active:shadow-[2px_2px_0px_#111111] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                      >
+                        <span x-text="submitting ? 'Enviando resposta...' : (hasSubmitted ? '✓ Resposta Registrada e Bloqueada' : ((challengeHasTimer && timeExpired) ? '⏱️ Tempo Esgotado no Servidor' : 'Enviar Resposta'))"></span>
+                      </button>
+                    </form>
+                  </section>
+                </div>
+
+                <!-- OVERLAY 1: MENSAGEM SOBREPOSTA CENTRALIZADA (ANTES DE INICIAR O CRONÔMETRO) -->
+                <template x-if="challengeHasTimer && !challengeStarted">
+                  <div class="absolute inset-0 z-20 flex items-center justify-center p-4 sm:p-6 bg-[#f5f5f2]/40 backdrop-blur-sm rounded-[22px]">
+                    <div class="bg-white rounded-[22px] p-8 sm:p-10 border-[3px] border-[#111111] shadow-[10px_10px_0px_#111111] text-center space-y-5 max-w-md w-full">
+                      <div class="space-y-2">
+                        <span class="inline-block px-3 py-1 bg-[#e0e7ff] text-[#3730a3] font-bold rounded-lg border border-[#111111] text-xs uppercase" x-text="`Categoria: ${currentChallenge.category || 'Geral'}`"></span>
+                        <h3 class="text-2xl sm:text-3xl font-black text-[#111111] tracking-tight">Desafio com Tempo Limite</h3>
+                      </div>
+
+                      <p class="text-sm sm:text-base text-[#5f5f5a] font-medium leading-relaxed">
+                        Você terá <strong class="text-[#111111]" x-text="`${Math.ceil((currentChallenge.time_limit_seconds || 300) / 60)} minutos`"></strong> para responder a esta questão. Clique abaixo quando estiver pronto para começar.
+                      </p>
+
+                      <div class="pt-2">
+                        <button 
+                          @click="startChallengeOnServer()" 
+                          type="button" 
+                          :disabled="startingChallenge"
+                          class="w-full py-4 bg-[#5d3fd3] hover:bg-[#4c1d95] text-white font-black text-base sm:text-lg rounded-2xl border-2 border-[#111111] shadow-[4px_4px_0px_#111111] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_#111111] transition-all disabled:opacity-50"
+                        >
+                          <span x-text="startingChallenge ? 'Iniciando...' : 'Iniciar Desafio'"></span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </template>
+
+                <!-- OVERLAY 2: MENSAGEM SOBREPOSTA CENTRALIZADA (TEMPO ESGOTADO) -->
+                <template x-if="challengeHasTimer && challengeStarted && timeExpired && !submissionFeedback">
+                  <div class="absolute inset-0 z-20 flex items-center justify-center p-4 sm:p-6 bg-[#fff7ed]/50 backdrop-blur-sm rounded-[22px]">
+                    <div class="bg-[#fff7ed] rounded-[22px] p-8 sm:p-10 border-[3px] border-[#9a3412] shadow-[10px_10px_0px_#9a3412] text-center space-y-5 max-w-md w-full">
+                      <h3 class="text-3xl font-black text-[#9a3412] tracking-tight">Tempo Esgotado</h3>
+                      <p class="text-sm sm:text-base text-[#111111] font-medium leading-relaxed">
+                        O limite de tempo para este desafio encerrou. Acompanhe seu histórico de respostas na aba de desempenho.
+                      </p>
+
+                      <div class="pt-2">
+                        <a 
+                          href="/aluno" 
+                          class="block w-full py-3.5 bg-[#111111] text-white font-black text-sm rounded-xl border-2 border-[#111111] shadow-[3px_3px_0px_#111111] hover:bg-[#5d3fd3] transition-all text-center"
+                        >
+                          Ver Meu Desempenho (/aluno)
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </template>
+
+                <!-- FEEDBACK APÓS SUBMISSÃO -->
+                <template x-if="submissionFeedback">
+                  <section class="bg-white rounded-[22px] p-6 sm:p-8 border-[3px] border-[#111111] shadow-[7px_7px_0px_#111111] space-y-4 mt-6">
+                    <h2 class="text-xl font-black text-[#111111]">Feedback da Submissão</h2>
+
+                    <div class="p-4 rounded-xl border-2 border-[#111111] shadow-[3px_3px_0px_#111111] flex items-center justify-between"
+                         :class="submissionFeedback.is_correct ? 'bg-[#f0fdf4] text-[#166534]' : 'bg-[#fff7ed] text-[#9a3412]'">
+                      <div class="font-black text-base">
+                        <span x-text="submissionFeedback.is_correct ? '✓ Resposta Correta!' : '✕ Resposta Incorreta'"></span>
+                      </div>
+                      <span class="text-xs font-mono font-bold" x-text="`Tempo gasto: ${submissionFeedback.elapsed_seconds || 0}s`"></span>
+                    </div>
+
+                    <template x-for="msg in (submissionFeedback.feedback?.messages || [])" :key="msg">
+                      <p class="text-[#111111] text-sm font-medium leading-relaxed" x-text="msg"></p>
+                    </template>
+                  </section>
+                </template>
+
+              </div>
+            </template>
+          </div>
+        </template>
+
+      </div>
+    </template>
+
+    <!-- FOOTER -->
+    <footer class="mt-12 pt-6 border-t-2 border-[#111111]/20 text-center text-xs font-bold text-[#5f5f5a] space-y-1">
+      <p>Desenvolvimento de Software para Web &bull; UFSM</p>
+      <p><a href="/admin" class="text-[#5d3fd3] hover:underline font-black">⚙️ Área do Professor / Admin</a></p>
+    </footer>
+
+  </main>
+
+</body>
+</html>

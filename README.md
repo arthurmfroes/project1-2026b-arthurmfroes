@@ -1,27 +1,61 @@
-# Challenge of the Day
+# Desafio do Dia - Plataforma Interativa de Aprendizado
 
-Aplicação web simples para publicar desafios curtos e registrar respostas de estudantes. O frontend usa HTML, CSS e JavaScript sem frameworks; o backend usa Google Apps Script e Google Sheets.
+Aplicação web moderna, responsiva e de alta performance desenvolvida com estética Neo-Brutalista para a publicação de desafios curtos de programação, cronômetro anti-burlar no servidor e painéis dedicados para estudantes e professores.
 
-## Arquivos
+---
 
-- `index.html`, `style.css`, `app.js`, `config.js`: frontend.
-- `backend/Code.gs`: API e integração com a planilha.
-- `backend/ChallengeEditor.html`: editor de desafios acessível pelo menu da planilha.
-- `template/challenge-of-the-day-template.xlsx`: modelo de planilha com dados de exemplo (ver planilha-modelo pública acessível no Google Sheets mais abaixo).
-- `template/sample-challenge.json`: exemplo de um desafio.
+## 🛠️ Tecnologias Utilizadas
 
-O arquivo `.xlsx` contém apenas a estrutura e os dados. A planilha-modelo distribuída pelo Google Sheets contém o projeto Apps Script vinculado com os arquivos de `backend/`.
+- **Back-end**: Node.js, Express, Better-SQLite3.
+- **Front-end**: HTML5, Alpine.js v3, Tailwind CSS (Neo-Brutalist Design System).
+- **Banco de Dados**: SQLite3 (com suporte a fusos horários UTC rigorosos).
 
-## Instalação
+---
 
-1. Faça uma cópia da **planilha-modelo pública**: https://docs.google.com/spreadsheets/d/1HngfYeFReO--MIo9EO2hOBBWvWgLMtIRwazf4oS0HjA/edit?usp=sharing
-2. Na cópia, abra **Extensões → Apps Script** e confirme que o projeto contém `Code.gs` e `ChallengeEditor.html`.
-3. No Apps Script, crie uma implantação (deploy) do tipo **Web app** e copie a URL terminada em `/exec`.
-4. No frontend, em `config.js`, substitua `GAS_WEB_APP_URL` pela URL da implantação (deploy).
-5. Publique os arquivos do frontend no GitHub Pages ou em outro serviço de hospedagem estática.
+## 🚀 Estrutura de Rotas e Páginas
 
-A planilha possui quatro abas: `Config`, `Students`, `Challenges` e `Responses`. O menu **Challenge of the Day** permite abrir o editor e validar os desafios.
+- **`/` (Desafio do Dia)**: Página principal do estudante para realizar o desafio ativo do dia.
+  - Seleção e confirmação de nome do aluno.
+  - Card com efeito Backdrop Blur antes de iniciar o desafio.
+  - Cronômetro sincronizado via servidor anti-F5 / troca de aba.
+  - Trava rígida de submissão única por estudante por desafio.
 
-## Desenvolvimento
+- **`/aluno` (Painel do Estudante & Revisão de Estudos)**:
+  - Resumo de desempenho (Respondidos, Acertos, Erros, Precisão %).
+  - Histórico completo de desafios respondidos.
+  - **Modal de Estudo Completo**: Renderiza o enunciado original, trecho de código, resposta marcada pelo aluno vs gabarito correto, raciocínio digitado e feedback explicativo do professor.
 
-A requisição principal usada pelo frontend é `getBootstrap`; o envio de respostas usa `submitResponse`. A planilha é a fonte de dados do backend.
+- **`/admin` (Painel Administrativo do Professor)**:
+  - **Visual Form Builder**: Editor visual interativo para criação e edição de desafios com blocos dinâmicos de texto, código, alternativas e gabarito.
+  - **Seletor de Categoria/Assunto Enum**: Dropdown Neo-Brutalist reutilizável com sugestões pré-existentes e suporte a novas categorias.
+  - **CRUD Completo de Alunos**: Cadastro, edição de nome, alteração de status (Ativo/Inativo) e exclusão.
+  - **Inspeção de Submissões**: Visualização detalhada de respostas enviadas por cada aluno.
+
+---
+
+## 📦 Como Executar Localmente
+
+1. **Instalar Dependências**:
+   ```bash
+   npm install
+   ```
+
+2. **Iniciar o Servidor**:
+   ```bash
+   npm start
+   # ou: node backend/src/server.js
+   ```
+
+3. **Acessar no Navegador**:
+   - Estudante: `http://localhost:8080`
+   - Painel de Desempenho do Aluno: `http://localhost:8080/aluno`
+   - Painel do Professor: `http://localhost:8080/admin`
+
+---
+
+## 📋 Atendimento às Demandas da Disciplina
+
+1. **Cronômetro com Tempo Limite por Desafio**: Implementado no backend (UTC) com bloqueio automático ao expirar.
+2. **Desafios por Data e Categoria**: Suporte a datas específicas, badges de categoria e filtro.
+3. **Interface para Dias Sem Desafio**: Apresenta aviso amigável e data do próximo desafio disponível.
+4. **Área de Desempenho e Revisão**: Página `/aluno` dedicada com estatísticas e revisão completa de respostas.

@@ -1,0 +1,10 @@
+{
+  "name": "challenge-of-the-day",
+  "version": "1.2.0",
+  "description": "Desafio do Dia - Aplicação Web Didática Full-Stack",
+  "main": "backend/src/server.js",
+  "scripts": {
+    "start": "node backend/src/server.js"
+  },
+  "dependencies": {}
+}

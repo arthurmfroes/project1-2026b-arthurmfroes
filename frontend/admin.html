@@ -1,0 +1,750 @@
+<!doctype html>
+<html lang="pt-BR" class="h-full">
+<head>
+  <meta charset="utf-8">
+  <title>Painel do Professor / Admin - Desafio do Dia</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Componente JS do Admin -->
+  <script src="./admin.js"></script>
+  <!-- Alpine.js v3 CDN (defer) -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <style>
+    body {
+      background-color: #f5f5f2;
+      background-image: 
+        linear-gradient(rgba(17, 17, 17, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(17, 17, 17, 0.035) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+  </style>
+</head>
+<body class="min-h-full text-[#111111] font-sans antialiased selection:bg-[#5d3fd3] selection:text-white" x-data="adminApp()" x-init="init()">
+  
+  <main class="max-w-5xl w-full mx-auto px-4 py-8 space-y-6">
+    
+    <!-- HEADER -->
+    <header class="flex items-center justify-between border-b-2 border-[#111111] pb-4">
+      <div>
+        <a href="/" class="text-xs font-black text-[#5d3fd3] hover:underline uppercase tracking-wider">← Voltar para o Desafio do Dia</a>
+        <h1 class="text-2xl sm:text-3xl font-black text-[#111111] mt-1 tracking-tight">Painel do Professor / Admin</h1>
+      </div>
+
+      <template x-if="isLoggedIn">
+        <div class="flex items-center gap-3 bg-white px-4 py-2 rounded-xl border-2 border-[#111111] shadow-[3px_3px_0px_#111111]">
+          <span class="text-sm font-bold text-[#111111]" x-text="`👤 Logado como: ${username}`"></span>
+          <button @click="logout()" type="button" class="px-3 py-1 bg-[#f5f5f2] hover:bg-[#111111] hover:text-white text-[#111111] text-xs font-black rounded-lg border border-[#111111] transition-colors">
+            Sair
+          </button>
+        </div>
+      </template>
+    </header>
+
+    <!-- FORMULÁRIO DE LOGIN DE ADMIN (SE NÃO ESTIVER LOGADO) -->
+    <template x-if="!isLoggedIn">
+      <section class="max-w-md mx-auto bg-white rounded-[22px] p-8 border-[3px] border-[#111111] shadow-[7px_7px_0px_#111111] space-y-6">
+        <div>
+          <h2 class="text-2xl font-black text-[#111111]">🔐 Login de Administrador</h2>
+          <p class="text-sm text-[#5f5f5a] font-medium mt-1">Acesse para gerenciar desafios e visualizar respostas.</p>
+        </div>
+
+        <form @submit.prevent="login()" class="space-y-4">
+          <div class="space-y-1">
+            <label class="block text-xs font-black text-[#111111] uppercase">Usuário</label>
+            <input 
+              type="text" 
+              x-model="loginUsername" 
+              placeholder="Digite seu usuário..." 
+              autocomplete="username" 
+              required
+              class="w-full px-4 py-3 rounded-xl border-2 border-[#111111] bg-[#fffafa] shadow-[3px_3px_0px_#111111] focus:outline-none focus:ring-2 focus:ring-[#5d3fd3] text-sm font-medium"
+            >
+          </div>
+
+          <div class="space-y-1">
+            <label class="block text-xs font-black text-[#111111] uppercase">Senha</label>
+            <input 
+              type="password" 
+              x-model="loginPassword" 
+              placeholder="Digite sua senha..." 
+              autocomplete="current-password" 
+              required
+              class="w-full px-4 py-3 rounded-xl border-2 border-[#111111] bg-[#fffafa] shadow-[3px_3px_0px_#111111] focus:outline-none focus:ring-2 focus:ring-[#5d3fd3] text-sm font-medium"
+            >
+          </div>
+
+          <template x-if="loginError">
+            <div class="p-3 bg-[#fff7ed] border-2 border-[#111111] text-[#9a3412] text-xs font-bold rounded-xl shadow-[3px_3px_0px_#111111]" x-text="loginError"></div>
+          </template>
+
+          <button 
+            type="submit" 
+            :disabled="loading"
+            class="w-full py-3.5 px-4 bg-[#5d3fd3] hover:bg-[#4c1d95] text-white font-black rounded-xl border-2 border-[#111111] shadow-[4px_4px_0px_#111111] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_#111111] transition-all text-sm disabled:opacity-50"
+          >
+            <span x-text="loading ? 'Entrando...' : 'Entrar no Painel'"></span>
+          </button>
+        </form>
+      </section>
+    </template>
+
+    <!-- CONTEÚDO PRINCIPAL (SE ESTIVER LOGADO) -->
+    <template x-if="isLoggedIn">
+      <div class="space-y-6">
+
+        <!-- BANNER DE SEGURANÇA SE TROCA DE SENHA FOR PENDENTE -->
+        <template x-if="mustChangePassword">
+          <div class="bg-[#fff1f2] border-2 border-[#111111] shadow-[5px_5px_0px_#111111] rounded-2xl p-4 flex items-center justify-between flex-wrap gap-3">
+            <div class="text-sm font-bold text-[#9f1239] flex items-center gap-2">
+              <span class="text-lg">⚠️</span>
+              <span><strong>Aviso de Segurança:</strong> Você está utilizando a senha pública padrão (<code>admin123</code>).</span>
+            </div>
+            <button 
+              @click="passwordModal.open('🔑 Alterar Senha de Admin')" 
+              type="button" 
+              class="px-4 py-2 bg-[#ff4d4d] text-white font-black text-xs rounded-xl border-2 border-[#111111] shadow-[2px_2px_0px_#111111] hover:bg-rose-600 transition-colors"
+            >
+              Alterar Senha Agora
+            </button>
+          </div>
+        </template>
+
+        <!-- NAVEGAÇÃO POR ABAS -->
+        <div class="flex items-center gap-2 border-b-2 border-[#111111] pb-2 overflow-x-auto">
+          <button 
+            @click="activeTab = 'challenges'" 
+            type="button"
+            class="px-4 py-2.5 rounded-xl font-black text-xs sm:text-sm border-2 border-[#111111] transition-all flex items-center gap-2 whitespace-nowrap"
+            :class="activeTab === 'challenges' ? 'bg-[#5d3fd3] text-white shadow-[3px_3px_0px_#111111]' : 'bg-white text-[#111111] hover:bg-[#f5f5f2]'"
+          >
+            <span>📋 Gerenciar Desafios</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-black" :class="activeTab === 'challenges' ? 'bg-white text-[#5d3fd3]' : 'bg-[#111111] text-white'" x-text="challenges.length"></span>
+          </button>
+
+          <button 
+            @click="activeTab = 'responses'" 
+            type="button"
+            class="px-4 py-2.5 rounded-xl font-black text-xs sm:text-sm border-2 border-[#111111] transition-all flex items-center gap-2 whitespace-nowrap"
+            :class="activeTab === 'responses' ? 'bg-[#5d3fd3] text-white shadow-[3px_3px_0px_#111111]' : 'bg-white text-[#111111] hover:bg-[#f5f5f2]'"
+          >
+            <span>📥 Respostas dos Alunos</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-black" :class="activeTab === 'responses' ? 'bg-white text-[#5d3fd3]' : 'bg-[#111111] text-white'" x-text="responses.length"></span>
+          </button>
+
+          <button 
+            @click="activeTab = 'students'" 
+            type="button"
+            class="px-4 py-2.5 rounded-xl font-black text-xs sm:text-sm border-2 border-[#111111] transition-all flex items-center gap-2 whitespace-nowrap"
+            :class="activeTab === 'students' ? 'bg-[#5d3fd3] text-white shadow-[3px_3px_0px_#111111]' : 'bg-white text-[#111111] hover:bg-[#f5f5f2]'"
+          >
+            <span>👥 Alunos</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-black" :class="activeTab === 'students' ? 'bg-white text-[#5d3fd3]' : 'bg-[#111111] text-white'" x-text="students.length"></span>
+          </button>
+        </div>
+
+        <!-- ABA 1: GERENCIAR DESAFIOS -->
+        <template x-if="activeTab === 'challenges'">
+          <div class="space-y-6">
+            
+            <!-- BARRA DE AÇÃO -->
+            <div class="flex items-center justify-between">
+              <h2 class="text-xl font-black text-[#111111]">Lista de Desafios</h2>
+              <button 
+                @click="openNewChallengeModal()" 
+                type="button"
+                class="px-4 py-2.5 bg-[#5d3fd3] text-white font-black text-xs sm:text-sm rounded-xl border-2 border-[#111111] shadow-[3px_3px_0px_#111111] hover:bg-[#4c1d95] transition-all"
+              >
+                + Cadastrar Novo Desafio
+              </button>
+            </div>
+
+            <!-- TABELA DE DESAFIOS -->
+            <section class="bg-white rounded-[22px] p-6 border-[3px] border-[#111111] shadow-[7px_7px_0px_#111111]">
+              <div class="overflow-x-auto rounded-xl border-2 border-[#111111] shadow-[3px_3px_0px_#111111]">
+                <table class="w-full text-left text-sm">
+                  <thead class="bg-[#f5f5f2] border-b-2 border-[#111111] text-xs font-black uppercase text-[#111111]">
+                    <tr>
+                      <th class="p-3.5">Data</th>
+                      <th class="p-3.5">Título</th>
+                      <th class="p-3.5">Categoria</th>
+                      <th class="p-3.5">Dificuldade</th>
+                      <th class="p-3.5">Tempo</th>
+                      <th class="p-3.5 text-right">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y border-[#111111]">
+                    <template x-if="challenges.length === 0">
+                      <tr><td colspan="6" class="p-6 text-center text-[#5f5f5a] font-medium">Nenhum desafio cadastrado ainda.</td></tr>
+                    </template>
+                    <template x-for="ch in challenges" :key="ch.id">
+                      <tr class="hover:bg-[#f5f5f2]">
+                        <td class="p-3.5 font-mono text-xs font-bold text-[#111111] whitespace-nowrap" x-text="ch.date || 'Sem data'"></td>
+                        <td class="p-3.5 font-extrabold text-[#111111]" x-text="ch.title"></td>
+                        <td class="p-3.5 whitespace-nowrap">
+                          <span class="px-2.5 py-1 bg-[#e0e7ff] text-[#3730a3] rounded-lg font-bold text-xs border border-[#111111] whitespace-nowrap inline-block shadow-[1px_1px_0px_#111111]" x-text="ch.category || 'Geral'"></span>
+                        </td>
+                        <td class="p-3.5 text-xs font-bold text-[#111111] whitespace-nowrap" x-text="ch.difficulty || 'Médio'"></td>
+                        <td class="p-3.5 font-mono text-xs font-bold text-[#111111] whitespace-nowrap" x-text="Number(ch.time_limit_seconds) > 0 ? `${ch.time_limit_seconds}s` : 'Sem Cronômetro'"></td>
+                        <td class="p-3.5 text-right whitespace-nowrap">
+                          <div class="flex flex-col items-end gap-1.5">
+                            <button @click="editChallenge(ch)" type="button" class="w-28 text-center px-2 py-1 bg-white hover:bg-slate-100 text-[#111111] font-black text-xs rounded-lg border border-[#111111] shadow-[2px_2px_0px_#111111]">
+                              ✏️ Editar
+                            </button>
+                            <button @click="viewResponsesForChallenge(ch.id)" type="button" class="w-28 text-center px-2 py-1 bg-[#e0e7ff] text-[#3730a3] font-black text-xs rounded-lg border border-[#111111] shadow-[2px_2px_0px_#111111]">
+                              👁️ Respostas
+                            </button>
+                            <button @click="deleteChallenge(ch.id)" type="button" class="w-28 text-center px-2 py-1 bg-[#ff4d4d] text-white font-black text-xs rounded-lg border border-[#111111] shadow-[2px_2px_0px_#111111]">
+                              🗑️ Remover
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+        </template>
+
+        <!-- ABA 2: RESPOSTAS DOS ALUNOS COM FILTROS DETALHADOS -->
+        <template x-if="activeTab === 'responses'">
+          <div class="space-y-6">
+            
+            <!-- FILTROS DE RESPOSTA -->
+            <div class="bg-white rounded-2xl p-4 border-2 border-[#111111] shadow-[4px_4px_0px_#111111] grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-black uppercase text-[#111111] mb-1">Filtrar por Desafio</label>
+                <select x-model="selectedChallengeFilter" class="w-full px-3 py-2 rounded-xl border-2 border-[#111111] bg-[#fffafa] font-medium text-xs">
+                  <option value="">-- Todos os Desafios --</option>
+                  <template x-for="ch in challenges" :key="ch.id">
+                    <option :value="ch.id" x-text="`${ch.title} (${ch.date || 'Sem data'})`"></option>
+                  </template>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-xs font-black uppercase text-[#111111] mb-1">Filtrar por Estudante</label>
+                <input 
+                  type="text" 
+                  x-model="studentSearchFilter" 
+                  placeholder="Buscar por nome do aluno..." 
+                  class="w-full px-3 py-2 rounded-xl border-2 border-[#111111] bg-[#fffafa] font-medium text-xs"
+                >
+              </div>
+            </div>
+
+            <!-- TABELA DE RESPOSTAS -->
+            <section class="bg-white rounded-[22px] p-6 border-[3px] border-[#111111] shadow-[7px_7px_0px_#111111]">
+              <div class="overflow-x-auto rounded-xl border-2 border-[#111111] shadow-[3px_3px_0px_#111111]">
+                <table class="w-full text-left text-sm">
+                  <thead class="bg-[#f5f5f2] border-b-2 border-[#111111] text-xs font-black uppercase text-[#111111]">
+                    <tr>
+                      <th class="p-3.5">Data / Hora</th>
+                      <th class="p-3.5">Estudante</th>
+                      <th class="p-3.5">Desafio</th>
+                      <th class="p-3.5">Resultado</th>
+                      <th class="p-3.5">Tempo</th>
+                      <th class="p-3.5 text-right">Detalhes</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y border-[#111111]">
+                    <template x-if="filteredResponses.length === 0">
+                      <tr><td colspan="6" class="p-6 text-center text-[#5f5f5a] font-medium">Nenhuma resposta encontrada para esses filtros.</td></tr>
+                    </template>
+                    <template x-for="r in filteredResponses" :key="r.id">
+                      <tr class="hover:bg-[#f5f5f2]">
+                        <td class="p-3.5 font-mono text-xs font-medium text-[#5f5f5a] whitespace-nowrap" x-text="new Date(r.submitted_at).toLocaleString('pt-BR')"></td>
+                        <td class="p-3.5 font-extrabold text-[#111111]" x-text="r.student_display_name"></td>
+                        <td class="p-3.5 font-bold text-[#111111]" x-text="r.challenge_title || r.challenge_id"></td>
+                        <td class="p-3.5 whitespace-nowrap">
+                          <span 
+                            class="px-2.5 py-0.5 rounded-md font-black text-xs border border-[#111111]"
+                            :class="r.is_correct === 1 ? 'bg-[#f0fdf4] text-[#166534]' : 'bg-[#fff7ed] text-[#9a3412]'"
+                            x-text="r.is_correct === 1 ? '✓ Correta' : '✕ Incorreta'"
+                          ></span>
+                        </td>
+                        <td class="p-3.5 font-mono text-xs font-bold text-[#111111] whitespace-nowrap" x-text="`${r.elapsed_seconds}s`"></td>
+                        <td class="p-3.5 text-right whitespace-nowrap">
+                          <button @click="openResponseDetails(r)" type="button" class="px-3 py-1 bg-[#5d3fd3] text-white font-black text-xs rounded-lg border border-[#111111] shadow-[2px_2px_0px_#111111]">
+                            🔍 Ver Detalhes
+                          </button>
+                        </td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+          </div>
+        </template>
+
+        <!-- ABA 3: GERENCIAR ALUNOS (CADASTRO E EDIÇÃO COMPLETA) -->
+        <template x-if="activeTab === 'students'">
+          <div class="space-y-6">
+            
+            <div class="flex items-center justify-between">
+              <h2 class="text-xl font-black text-[#111111]">👥 Lista de Alunos Cadastrados</h2>
+              <button 
+                @click="openNewStudentModal()" 
+                type="button"
+                class="px-4 py-2.5 bg-[#5d3fd3] text-white font-black text-xs sm:text-sm rounded-xl border-2 border-[#111111] shadow-[3px_3px_0px_#111111] hover:bg-[#4c1d95] transition-all"
+              >
+                + Cadastrar Novo Aluno
+              </button>
+            </div>
+
+            <section class="bg-white rounded-[22px] p-6 border-[3px] border-[#111111] shadow-[7px_7px_0px_#111111]">
+              <div class="overflow-x-auto rounded-xl border-2 border-[#111111] shadow-[3px_3px_0px_#111111]">
+                <table class="w-full text-left text-sm">
+                  <thead class="bg-[#f5f5f2] border-b-2 border-[#111111] text-xs font-black uppercase text-[#111111]">
+                    <tr>
+                      <th class="p-3.5">ID</th>
+                      <th class="p-3.5">Nome de Exibição</th>
+                      <th class="p-3.5">Status</th>
+                      <th class="p-3.5 text-right">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y border-[#111111]">
+                    <template x-if="students.length === 0">
+                      <tr><td colspan="4" class="p-6 text-center text-[#5f5f5a] font-medium">Nenhum aluno cadastrado ainda.</td></tr>
+                    </template>
+                    <template x-for="st in students" :key="st.student_id">
+                      <tr class="hover:bg-[#f5f5f2]">
+                        <td class="p-3.5 font-mono text-xs font-bold text-[#111111]" x-text="st.student_id"></td>
+                        <td class="p-3.5 font-extrabold text-[#111111]" x-text="st.display_name"></td>
+                        <td class="p-3.5">
+                          <span 
+                            class="px-2.5 py-0.5 rounded-md font-bold text-xs border border-[#111111]"
+                            :class="st.active === 1 || st.active === true ? 'bg-[#f0fdf4] text-[#166534]' : 'bg-[#fff7ed] text-[#9a3412]'"
+                            x-text="st.active === 1 || st.active === true ? 'Ativo' : 'Inativo'"
+                          ></span>
+                        </td>
+                        <td class="p-3.5 text-right whitespace-nowrap">
+                          <div class="flex items-center justify-end gap-2">
+                            <button @click="editStudent(st)" type="button" class="px-3 py-1 bg-white hover:bg-slate-100 text-[#111111] font-black text-xs rounded-lg border border-[#111111] shadow-[2px_2px_0px_#111111]">
+                              ✏️ Editar
+                            </button>
+                            <button @click="deleteStudent(st.student_id)" type="button" class="px-3 py-1 bg-[#ff4d4d] text-white font-black text-xs rounded-lg border border-[#111111] shadow-[2px_2px_0px_#111111]">
+                              🗑️ Remover
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+          </div>
+        </template>
+
+        <!-- MODAL DE CADASTRO E EDIÇÃO DE ALUNO (studentModal) -->
+        <template x-if="studentModal.isOpen">
+          <div class="fixed inset-0 bg-[#111111]/70 z-50 flex items-center justify-center p-4" @keydown.escape.window="studentModal.close()">
+            <div class="bg-white rounded-[22px] max-w-md w-full p-6 sm:p-8 space-y-5 border-[3px] border-[#111111] shadow-[10px_10px_0px_#111111]">
+              <div class="flex items-center justify-between border-b-2 border-[#111111] pb-3">
+                <h3 class="text-xl font-black text-[#111111]" x-text="studentModal.title"></h3>
+                <button @click="studentModal.close()" type="button" class="text-lg font-black text-[#5f5f5a] hover:text-[#111111]">✕</button>
+              </div>
+
+              <form @submit.prevent="saveStudent()" class="space-y-4">
+                <div class="space-y-1">
+                  <label class="block text-xs font-black text-[#111111] uppercase">ID do Aluno (Identificador Único)</label>
+                  <input 
+                    type="text" 
+                    x-model="editingStudentId" 
+                    placeholder="Deixe em branco para gerar st_05 automaticamente..." 
+                    :disabled="editingStudentId.length > 0"
+                    class="w-full px-4 py-3 rounded-xl border-2 border-[#111111] bg-[#fffafa] font-mono text-xs font-bold shadow-[3px_3px_0px_#111111] disabled:opacity-60"
+                  >
+                </div>
+
+                <div class="space-y-1">
+                  <label class="block text-xs font-black text-[#111111] uppercase">Nome de Exibição do Aluno *</label>
+                  <input 
+                    type="text" 
+                    x-model="stDisplayName" 
+                    placeholder="Ex: Eduardo Lima" 
+                    required 
+                    class="w-full px-4 py-3 rounded-xl border-2 border-[#111111] bg-white font-bold text-sm shadow-[3px_3px_0px_#111111] focus:outline-none focus:ring-2 focus:ring-[#5d3fd3]"
+                  >
+                </div>
+
+                <div class="flex items-center gap-2 pt-1">
+                  <label class="flex items-center gap-2 cursor-pointer font-bold text-xs text-[#111111]">
+                    <input type="checkbox" x-model="stActive" class="w-4 h-4 text-[#5d3fd3] rounded border-2 border-[#111111]">
+                    <span>Ativo no sistema (disponível na lista de estudantes)</span>
+                  </label>
+                </div>
+
+                <template x-if="stMsg">
+                  <div class="p-3 rounded-xl text-xs font-bold border-2 border-[#111111] shadow-[3px_3px_0px_#111111]" :class="stMsgType === 'error' ? 'bg-[#fff7ed] text-[#9a3412]' : 'bg-[#f0fdf4] text-[#166534]'" x-text="stMsg"></div>
+                </template>
+
+                <div class="flex items-center gap-3 pt-2">
+                  <button type="submit" :disabled="savingStudent" class="flex-1 py-3 bg-[#5d3fd3] hover:bg-[#4c1d95] text-white font-black rounded-xl border-2 border-[#111111] shadow-[3px_3px_0px_#111111] text-sm">
+                    <span x-text="savingStudent ? 'Salvando...' : 'Salvar Aluno'"></span>
+                  </button>
+                  <button @click="studentModal.close()" type="button" class="py-3 px-4 bg-[#f5f5f2] hover:bg-slate-200 text-[#111111] font-black rounded-xl border-2 border-[#111111] shadow-[3px_3px_0px_#111111] text-sm">
+                    Cancelar
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </template>
+
+        <!-- MODAL DE CRIAR / EDITAR DESAFIO COM CONSTRUTOR VISUAL -->
+        <template x-if="challengeModal.isOpen">
+          <div class="fixed inset-0 bg-[#111111]/70 z-50 flex items-center justify-center p-4 overflow-y-auto" @keydown.escape.window="challengeModal.close()">
+            <div class="bg-white rounded-[22px] max-w-3xl w-full p-6 sm:p-8 space-y-5 border-[3px] border-[#111111] shadow-[10px_10px_0px_#111111] my-8 max-h-[90vh] overflow-y-auto">
+              
+              <!-- HEADER DO MODAL E SELETOR DE MODO -->
+              <div class="flex items-center justify-between border-b-2 border-[#111111] pb-3">
+                <h3 class="text-xl font-black text-[#111111]" x-text="challengeModal.title"></h3>
+                
+                <div class="flex items-center gap-2">
+                  <div class="flex items-center bg-[#f5f5f2] p-1 rounded-xl border border-[#111111]">
+                    <button 
+                      @click="editorMode = 'visual'; syncJsonToVisual()" 
+                      type="button"
+                      class="px-3 py-1 rounded-lg text-xs font-black transition-all"
+                      :class="editorMode === 'visual' ? 'bg-[#5d3fd3] text-white shadow-[2px_2px_0px_#111111]' : 'text-[#111111]'"
+                    >
+                      ✏️ Form Visual
+                    </button>
+                    <button 
+                      @click="editorMode = 'json'; syncVisualToJson()" 
+                      type="button"
+                      class="px-3 py-1 rounded-lg text-xs font-black transition-all"
+                      :class="editorMode === 'json' ? 'bg-[#111111] text-white shadow-[2px_2px_0px_#111111]' : 'text-[#111111]'"
+                    >
+                      💻 Modo JSON
+                    </button>
+                  </div>
+
+                  <button @click="challengeModal.close()" type="button" class="text-lg font-black text-[#5f5f5a] hover:text-[#111111] ml-2">✕</button>
+                </div>
+              </div>
+
+              <!-- FORMULÁRIO -->
+              <form @submit.prevent="saveChallenge()" class="space-y-5">
+                
+                <!-- DADOS GERAIS DO DESAFIO (CABEÇALHO) -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-[#f5f5f2] p-4 rounded-xl border-2 border-[#111111]">
+                  <div class="space-y-1">
+                    <label class="block text-xs font-black text-[#111111] uppercase">Título do Desafio</label>
+                    <input type="text" x-model="chTitle" placeholder="Ex: O que acontece após o clique?" required class="w-full px-3.5 py-2.5 rounded-xl border-2 border-[#111111] bg-white text-sm font-medium">
+                  </div>
+
+                  <!-- COMPONENTE SELETOR REUTILIZÁVEL DE CATEGORIA -->
+                  <div class="space-y-1 relative" 
+                       x-data="categorySelector(chCategory, existingCategories)" 
+                       x-init="$watch('query', val => chCategory = val); $watch('chCategory', val => { if (val !== query) query = val; })">
+                    <label class="block text-xs font-black text-[#111111] uppercase">Categoria / Assunto</label>
+                    
+                    <div class="relative">
+                      <input 
+                        type="text" 
+                        x-model="query" 
+                        @focus="isOpen = true"
+                        @input="onInput()" 
+                        placeholder="Selecione ou digite uma categoria..." 
+                        required
+                        class="w-full px-3.5 py-2.5 rounded-xl border-2 border-[#111111] bg-white text-sm font-bold shadow-[2px_2px_0px_#111111] focus:outline-none focus:ring-2 focus:ring-[#5d3fd3]"
+                      >
+                      <button 
+                        @click="isOpen = !isOpen" 
+                        type="button"
+                        class="absolute right-2 top-1/2 -translate-y-1/2 px-2 py-0.5 bg-[#f5f5f2] border border-[#111111] rounded-lg text-xs font-black hover:bg-slate-200 transition-colors"
+                      >
+                        <span x-text="isOpen ? '▲' : '▼'"></span>
+                      </button>
+                    </div>
+
+                    <template x-if="isOpen && filteredCategories.length > 0">
+                      <ul 
+                        @click.away="isOpen = false"
+                        class="absolute z-50 w-full mt-1 bg-white rounded-xl border-2 border-[#111111] shadow-[6px_6px_0px_#111111] max-h-48 overflow-y-auto divide-y border-[#111111]"
+                      >
+                        <template x-for="cat in filteredCategories" :key="cat">
+                          <li>
+                            <button 
+                              type="button" 
+                              @click="selectCategory(cat)"
+                              class="w-full text-left px-3.5 py-2.5 hover:bg-[#5d3fd3] hover:text-white font-extrabold text-xs text-[#111111] transition-colors flex items-center justify-between"
+                            >
+                              <span x-text="cat"></span>
+                              <template x-if="query === cat">
+                                <span class="text-[10px] font-black uppercase bg-[#111111] text-white px-2 py-0.5 rounded border border-[#111111]">Selecionado</span>
+                              </template>
+                            </button>
+                          </li>
+                        </template>
+                      </ul>
+                    </template>
+                  </div>
+
+                  <div class="space-y-1">
+                    <label class="block text-xs font-black text-[#111111] uppercase">Data de Publicação</label>
+                    <input type="date" x-model="chDate" required class="w-full px-3.5 py-2.5 rounded-xl border-2 border-[#111111] bg-white text-sm font-medium">
+                  </div>
+
+                  <div class="space-y-1">
+                    <label class="block text-xs font-black text-[#111111] uppercase">Tempo Limite (segundos) [0 = Sem Cronômetro]</label>
+                    <input type="number" x-model="chTime" min="0" max="3600" required class="w-full px-3.5 py-2.5 rounded-xl border-2 border-[#111111] bg-white text-sm font-medium">
+                  </div>
+                </div>
+
+                <!-- MODO CONSTRUTOR VISUAL -->
+                <template x-if="editorMode === 'visual'">
+                  <div class="space-y-4 pt-1">
+                    
+                    <!-- 1. INTRODUÇÃO DA QUESTÃO -->
+                    <div class="space-y-1">
+                      <label class="block text-xs font-black text-[#111111] uppercase">1. Introdução / Contexto ao Aluno (Opcional)</label>
+                      <textarea x-model="builderIntroText" rows="2" placeholder="Explique brevemente o conceito ou contexto..." class="w-full px-3.5 py-2.5 rounded-xl border-2 border-[#111111] bg-[#fffafa] text-xs font-medium"></textarea>
+                    </div>
+
+                    <!-- 2. CÓDIGO DE EXEMPLO -->
+                    <div class="space-y-1">
+                      <div class="flex items-center justify-between">
+                        <label class="block text-xs font-black text-[#111111] uppercase">2. Trecho de Código de Exemplo (Opcional)</label>
+                        <select x-model="builderCodeLang" class="text-xs font-bold border border-[#111111] rounded px-2 py-0.5 bg-white">
+                          <option value="html">HTML / JS</option>
+                          <option value="javascript">JavaScript</option>
+                          <option value="css">CSS</option>
+                        </select>
+                      </div>
+                      <textarea x-model="builderCodeSnippet" rows="3" placeholder="Ex: <button id='btn'>Clique aqui</button>" class="w-full px-3.5 py-2.5 rounded-xl border-2 border-[#111111] bg-[#111111] text-[#f5f5f2] font-mono text-xs"></textarea>
+                    </div>
+
+                    <!-- 3. PERGUNTA PRINCIPAL DO DESAFIO -->
+                    <div class="space-y-1">
+                      <label class="block text-xs font-black text-[#111111] uppercase">3. Pergunta do Desafio *</label>
+                      <input type="text" x-model="builderQuestionPrompt" placeholder="Ex: Qual opção descreve o comportamento correto do código?" required class="w-full px-3.5 py-2.5 rounded-xl border-2 border-[#111111] bg-[#fffafa] text-xs font-bold text-[#5d3fd3]">
+                    </div>
+
+                    <!-- 4. ALTERNATIVAS DE ESCOLHA ÚNICA (A, B, C, D...) -->
+                    <div class="space-y-3 bg-[#fffafa] p-4 rounded-xl border-2 border-[#111111]">
+                      <div class="flex items-center justify-between">
+                        <label class="block text-xs font-black text-[#111111] uppercase">4. Alternativas de Resposta & Gabarito *</label>
+                        <button @click="addBuilderOption()" type="button" class="px-3 py-1 bg-white hover:bg-slate-100 text-[#111111] font-black text-xs rounded-lg border border-[#111111] shadow-[2px_2px_0px_#111111]">
+                          + Adicionar Opção
+                        </button>
+                      </div>
+
+                      <div class="space-y-2">
+                        <template x-for="(opt, index) in builderOptions" :key="opt.id">
+                          <div class="flex items-center gap-2">
+                            <!-- SELETOR RADIO DE RESPOSTA CORRETA -->
+                            <label class="flex items-center gap-1 cursor-pointer px-2.5 py-2 rounded-lg border-2 border-[#111111] font-black text-xs"
+                                   :class="builderCorrectOptionId === opt.id ? 'bg-[#f0fdf4] text-[#166534] border-[#166534]' : 'bg-white text-[#111111]'">
+                              <input type="radio" name="gabarito" :value="opt.id" x-model="builderCorrectOptionId" class="text-[#166534] focus:ring-[#166534]">
+                              <span x-text="`${opt.id.toUpperCase()})`"></span>
+                            </label>
+
+                            <!-- TEXTO DA ALTERNATIVA -->
+                            <input 
+                              type="text" 
+                              x-model="opt.label" 
+                              :placeholder="`Texto da alternativa ${opt.id.toUpperCase()}...`" 
+                              required 
+                              class="flex-1 px-3 py-2 rounded-lg border-2 border-[#111111] bg-white text-xs font-medium"
+                            >
+
+                            <!-- REMOVER ALTERNATIVA -->
+                            <button @click="removeBuilderOption(index)" type="button" class="text-xs text-[#ff4d4d] hover:text-red-700 font-bold px-2">✕</button>
+                          </div>
+                        </template>
+                      </div>
+
+                      <p class="text-[11px] text-[#5f5f5a] font-medium pt-1">
+                        💡 <strong>Dica:</strong> Marque a bolinha verde da alternativa que é a <strong>resposta correta (Gabarito)</strong>.
+                      </p>
+                    </div>
+
+                    <!-- 5. FEEDBACK AO ALUNO -->
+                    <div class="space-y-1">
+                      <label class="block text-xs font-black text-[#111111] uppercase">5. Mensagem de Feedback ao Aluno (Opcional)</label>
+                      <input type="text" x-model="builderFeedbackText" placeholder="Ex: Resposta correta! O JavaScript roda no navegador via fetch." class="w-full px-3.5 py-2.5 rounded-xl border-2 border-[#111111] bg-white text-xs font-medium">
+                    </div>
+
+                  </div>
+                </template>
+
+                <!-- MODO JSON BRUTO -->
+                <template x-if="editorMode === 'json'">
+                  <div class="space-y-1">
+                    <label class="block text-xs font-black text-[#111111] uppercase">Estrutura JSON Bruta</label>
+                    <textarea x-model="chJson" rows="12" placeholder="Cole a estrutura JSON do desafio..." required class="w-full px-4 py-3 rounded-xl border-2 border-[#111111] font-mono text-xs shadow-[3px_3px_0px_#111111] bg-[#111111] text-[#f5f5f2]"></textarea>
+                  </div>
+                </template>
+
+                <template x-if="chMsg">
+                  <div class="p-3 rounded-xl text-xs font-bold border-2 border-[#111111] shadow-[3px_3px_0px_#111111]" :class="chMsgType === 'error' ? 'bg-[#fff7ed] text-[#9a3412]' : 'bg-[#f0fdf4] text-[#166534]'" x-text="chMsg"></div>
+                </template>
+
+                <div class="flex items-center gap-3 pt-2">
+                  <button type="submit" :disabled="savingChallenge" class="flex-1 py-3 bg-[#5d3fd3] hover:bg-[#4c1d95] text-white font-black rounded-xl border-2 border-[#111111] shadow-[3px_3px_0px_#111111] text-sm">
+                    <span x-text="savingChallenge ? 'Salvando...' : 'Salvar Desafio'"></span>
+                  </button>
+                  <button @click="challengeModal.close()" type="button" class="py-3 px-4 bg-[#f5f5f2] hover:bg-slate-200 text-[#111111] font-black rounded-xl border-2 border-[#111111] shadow-[3px_3px_0px_#111111] text-sm">
+                    Cancelar
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </template>
+
+        <!-- MODAL GENÉRICO DE DETALHES COMPREENSIVOS DA SUBMISSÃO -->
+        <template x-if="responseModal.isOpen && responseModal.data">
+          <div class="fixed inset-0 bg-[#111111]/70 z-50 flex items-center justify-center p-4" @keydown.escape.window="responseModal.close()">
+            <div class="bg-white rounded-[22px] max-w-2xl w-full p-6 sm:p-8 space-y-5 border-[3px] border-[#111111] shadow-[10px_10px_0px_#111111] max-h-[90vh] overflow-y-auto">
+              
+              <!-- HEADER DO MODAL -->
+              <div class="flex items-center justify-between border-b-2 border-[#111111] pb-3">
+                <h3 class="text-xl font-black text-[#111111]" x-text="responseModal.title"></h3>
+                <button @click="responseModal.close()" type="button" class="text-lg font-black text-[#5f5f5a] hover:text-[#111111]">✕</button>
+              </div>
+
+              <!-- INFORMAÇÕES DE CABEÇALHO DA SUBMISSÃO -->
+              <div class="p-4 bg-[#f5f5f2] rounded-xl border-2 border-[#111111] grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                <p><strong>Estudante:</strong> <span class="font-bold text-[#5d3fd3]" x-text="responseModal.data.student_display_name"></span></p>
+                <p><strong>Desafio:</strong> <span class="font-bold text-[#111111]" x-text="responseModal.data.challenge_title || responseModal.data.challenge_id"></span></p>
+                <p><strong>Data/Hora:</strong> <span class="font-medium text-[#5f5f5a]" x-text="new Date(responseModal.data.submitted_at).toLocaleString('pt-BR')"></span></p>
+                <p><strong>Tempo Decorrido:</strong> <span class="font-mono font-bold" x-text="`${responseModal.data.elapsed_seconds} segundos`"></span></p>
+                <div class="sm:col-span-2 pt-1 flex items-center gap-2">
+                  <strong>Resultado da Avaliação:</strong>
+                  <span 
+                    class="px-3 py-0.5 rounded-md font-black text-xs border border-[#111111]"
+                    :class="responseModal.data.is_correct === 1 ? 'bg-[#f0fdf4] text-[#166534]' : 'bg-[#fff7ed] text-[#9a3412]'"
+                    x-text="responseModal.data.is_correct === 1 ? '✓ Resposta Correta' : '✕ Resposta Incorreta'"
+                  ></span>
+                </div>
+              </div>
+
+              <!-- ENUNCIADO DO DESAFIO (SE DISPONÍVEL) -->
+              <template x-if="responseModal.data.challengeObj">
+                <div class="space-y-2 border-2 border-[#111111] p-4 rounded-xl bg-[#fffafa]">
+                  <h4 class="font-black text-xs uppercase text-[#5d3fd3] tracking-wider">Questão Original do Desafio:</h4>
+                  <template x-for="(b, i) in [...(responseModal.data.challengeObj.intro || []), ...(responseModal.data.challengeObj.prompt || [])]" :key="i">
+                    <div class="text-xs text-[#111111] leading-relaxed">
+                      <template x-if="b.type === 'markdown' || b.type === 'question'">
+                        <p class="font-semibold" x-text="b.content"></p>
+                      </template>
+                      <template x-if="b.type === 'code'">
+                        <pre class="p-3 bg-[#111111] text-[#f5f5f2] font-mono text-[11px] rounded-lg overflow-x-auto my-1"><code x-text="b.content"></code></pre>
+                      </template>
+                    </div>
+                  </template>
+                </div>
+              </template>
+
+              <!-- RESPOSTAS ENVIADAS PELO ALUNO -->
+              <div class="space-y-3">
+                <h4 class="font-black text-xs uppercase tracking-wider text-[#5f5f5a]">Respostas Enviadas pelo Aluno:</h4>
+                
+                <div class="space-y-3">
+                  <template x-for="field in responseModal.data.formattedFields" :key="field.id">
+                    <div class="p-3.5 rounded-xl border-2 border-[#111111] space-y-1.5"
+                         :class="field.type === 'single_choice' ? (field.is_correct ? 'bg-[#f0fdf4] border-[#166534]' : 'bg-[#fff7ed] border-[#9a3412]') : 'bg-white'">
+                      
+                      <p class="text-xs font-black text-[#111111]" x-text="field.label"></p>
+                      
+                      <!-- ESCOLHA ÚNICA FORMATADA -->
+                      <template x-if="field.type === 'single_choice'">
+                        <div class="space-y-1 text-xs font-bold">
+                          <p :class="field.is_correct ? 'text-[#166534]' : 'text-[#9a3412]'">
+                            <span>Resposta do Aluno: </span>
+                            <span x-text="field.user_val_label"></span>
+                          </p>
+                          <template x-if="!field.is_correct && field.correct_val_label">
+                            <p class="text-[#166534] font-bold">
+                              <span>✓ Opção Correta Esperada: </span>
+                              <span x-text="field.correct_val_label"></span>
+                            </p>
+                          </template>
+                        </div>
+                      </template>
+
+                      <!-- TEXTO LIVRE / RACIOCÍNIO FORMATADO -->
+                      <template x-if="field.type !== 'single_choice'">
+                        <div class="p-2.5 bg-[#f5f5f2] rounded-lg border border-[#111111] font-mono text-xs text-[#111111] whitespace-pre-wrap" x-text="field.user_val_text"></div>
+                      </template>
+                    </div>
+                  </template>
+                </div>
+              </div>
+
+              <!-- FEEDBACKS GERADOS -->
+              <template x-if="responseModal.data.feedbackMessages && responseModal.data.feedbackMessages.length > 0">
+                <div class="p-3 bg-[#e0e7ff] rounded-xl border border-[#3730a3] text-xs font-medium text-[#3730a3] space-y-1">
+                  <strong>Feedback do Sistema:</strong>
+                  <template x-for="msg in responseModal.data.feedbackMessages" :key="msg">
+                    <p x-text="msg"></p>
+                  </template>
+                </div>
+              </template>
+
+              <div class="pt-2">
+                <button @click="responseModal.close()" type="button" class="w-full py-3 bg-[#111111] text-white font-black rounded-xl border-2 border-[#111111] text-sm shadow-[3px_3px_0px_#111111]">
+                  Fechar Detalhes
+                </button>
+              </div>
+            </div>
+          </div>
+        </template>
+
+        <!-- MODAL GENÉRICO DE ALTERAÇÃO DE SENHA -->
+        <template x-if="passwordModal.isOpen">
+          <div class="fixed inset-0 bg-[#111111]/70 z-50 flex items-center justify-center p-4" @keydown.escape.window="passwordModal.close()">
+            <div class="bg-white rounded-[22px] max-w-md w-full p-6 space-y-4 border-[3px] border-[#111111] shadow-[10px_10px_0px_#111111]">
+              <div class="flex items-center justify-between border-b-2 border-[#111111] pb-3">
+                <h3 class="text-xl font-black text-[#111111]" x-text="passwordModal.title"></h3>
+                <button @click="passwordModal.close()" type="button" class="text-lg font-black text-[#5f5f5a]">✕</button>
+              </div>
+
+              <form @submit.prevent="changePassword()" class="space-y-4">
+                <div class="space-y-1">
+                  <label class="block text-xs font-black text-[#111111] uppercase">Senha Atual</label>
+                  <input type="password" x-model="passCurrent" required class="w-full px-4 py-3 rounded-xl border-2 border-[#111111] bg-[#fffafa] shadow-[3px_3px_0px_#111111] text-sm font-medium">
+                </div>
+                <div class="space-y-1">
+                  <label class="block text-xs font-black text-[#111111] uppercase">Nova Senha (min. 6 caracteres)</label>
+                  <input type="password" x-model="passNew" minlength="6" required class="w-full px-4 py-3 rounded-xl border-2 border-[#111111] bg-[#fffafa] shadow-[3px_3px_0px_#111111] text-sm font-medium">
+                </div>
+
+                <template x-if="passMsg">
+                  <div class="p-3 rounded-xl text-xs font-bold border-2 border-[#111111] shadow-[3px_3px_0px_#111111]" :class="passMsgType === 'error' ? 'bg-[#fff7ed] text-[#9a3412]' : 'bg-[#f0fdf4] text-[#166534]'" x-text="passMsg"></div>
+                </template>
+
+                <div class="flex items-center gap-3 pt-2">
+                  <button type="submit" class="flex-1 py-3 bg-[#5d3fd3] hover:bg-[#4c1d95] text-white font-black rounded-xl border-2 border-[#111111] shadow-[3px_3px_0px_#111111] text-sm">
+                    Salvar Nova Senha
+                  </button>
+                  <button @click="passwordModal.close()" type="button" class="py-3 px-4 bg-[#f5f5f2] hover:bg-slate-200 text-[#111111] font-black rounded-xl border-2 border-[#111111] shadow-[3px_3px_0px_#111111] text-sm">
+                    Cancelar
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </template>
+
+      </div>
+    </template>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="mt-12 py-6 border-t-2 border-[#111111] text-center text-xs font-bold text-[#5f5f5a]">
+    <p>Desenvolvimento de Software para Web &bull; UFSM</p>
+  </footer>
+
+</body>
+</html>
