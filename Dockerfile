@@ -1,5 +1,5 @@
 # Stage 1: Build & Prepare Dependencies
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 WORKDIR /app
 
 # Install build dependencies for native compilation (better-sqlite3)
@@ -11,7 +11,7 @@ WORKDIR /app/backend
 RUN npm ci --only=production
 
 # Stage 2: Final Minimal Runtime Image
-FROM node:20-alpine AS runner
+FROM node:22-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
