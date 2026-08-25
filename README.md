@@ -4,7 +4,7 @@
 > 2. Substitua todos os trechos de texto iniciados com "Substitua" por informações do seu projeto, conforme solicitado em cada trecho.
 > 3. Substitua a imagem animada por um GIF/WEBP mostrando o resultado do seu projeto (o arquivo pode ser armazenado no repositório ou em URL externa). 
 > 4. Remova todas as instruções de entrega.
-> 5. Renomeie esta arquivo para README.md e entregue-o dentro da pasta raiz do seu repositório de entrega. 
+> 5. Renomeie este arquivo para README.md e entregue-o dentro da pasta raiz do seu repositório de entrega. 
 > 6. Double-check: Certifique-se de que seu README.md não contenha instruções de entrega e seja visualizado corretamente ao abrir seu repositório!
 > Opcional: você pode alterar a formatação deste README, mas mantenha todas as informações solicitadas.
 
@@ -54,9 +54,9 @@ Pensei em quatro demandas principais como cliente:
 
 ### Processo
 
-Comecei clonando o repositório e rodando a aplicação, sinto que é mais fácil de assimilar as funções se começo pela visão prática do projeto. Tive problemas com o google sheets e já decidi que ele precisava ir. Depois fui, assistido de IA (usei os modelos da google, da família gemini), navegando pelo código pra entender como cada coisa se comunicava. Não me interessei muito em abrir os arquivos de interface, que sei que são relativamente simples.
+Comecei clonando o repositório e rodando a aplicação, sinto que é mais fácil de assimilar as funções se começo pela visão prática do projeto. Tive problemas com o Google Sheets e já decidi que ele precisava ir. Depois fui, assistido por IA (usei os modelos da Google, da família Gemini), navegando pelo código pra entender como cada coisa se comunicava. Não me interessei muito em abrir os arquivos de interface, que sei que são relativamente simples.
 
-Depois de entender bem o sistema e alinhar com as demandas, comecei a escrever as specs necessárias pra migrar do google sheets para um backend mais tradicional. O principal desafio foi a infraestrutura proposta pro trabalho. Fiz um brainstorm junto com a IA pra definir plataformas e abordagens que poderíamos usar, e cheguei a conclusão que um container único, com a imagem hospedada em serviços gratuitos do github era o melhor caminho. A partir daí, foi um processo de tentativa e erro para alinhar as specs com o que foi solicitado pelo cliente e posteriormente hospedar a imagem. O processo de definição de specs e testagem foi mais longo que o desenvolvimento em sí, dado que o código foi integralmente escrito por IA.
+Depois de entender bem o sistema e alinhar com as demandas, comecei a escrever as specs necessárias pra migrar do Google Sheets para um backend mais tradicional. O principal desafio foi a infraestrutura proposta pro trabalho. Fiz um brainstorm junto com a IA pra definir plataformas e abordagens que poderíamos usar, e cheguei à conclusão de que um container único, com a imagem hospedada em serviços gratuitos do GitHub, era o melhor caminho. A partir daí, foi um processo de tentativa e erro para alinhar as specs com o que foi solicitado pelo cliente e posteriormente hospedar a imagem. O processo de definição de specs e testagem foi mais longo que o desenvolvimento em si, dado que o código foi integralmente escrito por IA.
 
 ### Trechos de código
 
@@ -65,7 +65,7 @@ Indique pelo menos 3 trechos de código que você queira destacar para a turma (
 
 ##### Trecho 1
 
-Uma das propostas do trabalho era automatizar o processo de release com github actions, porque eu não tenho familiaridade com ele. Nunca usei num projeto prático. Achei bem útil. Achei curioso a maneira como import de actions funciona, que é uma menção de actions publicadas no próprio github.
+Uma das propostas do trabalho era automatizar o processo de release com GitHub Actions, porque eu não tenho familiaridade com ele. Nunca usei num projeto prático. Achei bem útil. Achei curiosa a maneira como o import de actions funciona, que é uma menção de actions publicadas no próprio GitHub.
 
  jobs:
       build-and-push:
@@ -105,13 +105,13 @@ Exemplo de action hospedada
 
 ##### Trecho 2
 
-Destaco o Docker porque é uma ferramenta que uso diariamente e é muito útil. Utilizamos nesse projeto porque o Railway lida muito bem com imagens Docker, é um deploy muito simples. A segunda razão é porque é uma ferramenta excelente em garantir consitência do código independente do ambiente. Docker é basicamente uma máquina virtual (ou container) que funciona só com as especificações dadas pelo arquivo de configuração. É um mini SO dedicado só para o app.
+Destaco o Docker porque é uma ferramenta que uso diariamente e é muito útil. Utilizamos nesse projeto porque o Railway lida muito bem com imagens Docker, é um deploy muito simples. A segunda razão é porque é uma ferramenta excelente em garantir consistência do código independente do ambiente. Docker é basicamente uma máquina virtual (ou container) que funciona só com as especificações dadas pelo arquivo de configuração. É um mini SO dedicado só para o app.
 
     # Baixamos apenas o node 22 numa instalação mínima de linux (alpine)
     FROM node:22-alpine AS builder
     WORKDIR /app
 
-    # Pré requisitos pro better sqlite3
+    # Pré-requisitos pro better-sqlite3
     RUN apk add --no-cache python3 make g++
     COPY backend/package.json backend/package-lock.json* ./backend/
     WORKDIR /app/backend
@@ -143,7 +143,7 @@ Além disso, o Alpine.js melhorou muito a integração do JavaScript com o HTML.
       suggestionsEl.innerHTML = "";
     });
 
-  Com o Alpine não precisa buscar elemento nenhum no DOM, o clique e o estado são tratados de maneira unificada praticamente
+  Com o Alpine não precisa buscar elemento nenhum no DOM, o clique e o estado são tratados de maneira praticamente unificada:
 
     <!-- Como ficou agora (importado via CDN e com bind direto na tag): -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -156,17 +156,17 @@ Além disso, o Alpine.js melhorou muito a integração do JavaScript com o HTML.
     >
     </button>
 
-Achei bem mais legível e não é um framework pesado e complexo, como react, vue, etc, então não é overkill.
+Achei bem mais legível e não é um framework pesado e complexo, como React, Vue, etc., então não é overkill.
 
 ## Tecnologias
 
 ### Linguagens e afins
 
-- **HTML5 CSS**: Estrutura e semântica básica das páginas.
-- **JavaScript**: Lógica tanto do cliente quanto do servidor.
-- **Node (v22) & Express**: Backend em formato de API REST para servir os desafios, autenticação/validação do cronômetro e registro de respostas.
+- **HTML5 & CSS3**: Estrutura e semântica básica das páginas.
+- **JavaScript (ES6+)**: Lógica tanto do cliente quanto do servidor.
+- **Node.js (v22) & Express**: Backend em formato de API REST para servir os desafios, autenticação/validação do cronômetro e registro de respostas.
 - **Better-SQLite3 / SQLite**: Banco de dados relacional embutido para persistência local de alunos, desafios e submissões sem dependência de serviços externos.
-- **Alpine**: Framework reativo minimalista importado via CDN para manipulação de estado, reatividade e eventos na interface.
+- **Alpine.js**: Framework reativo minimalista importado via CDN para manipulação de estado, reatividade e eventos na interface.
 - **Tailwind CSS**: Framework CSS utilitário carregado via CDN para estilização visual rápida com design neo-brutalista.
 - **Docker**: Conteinerização da aplicação através de builds multi-stage sobre imagem base Alpine Linux.
 - **GitHub Actions & GHCR**: Pipeline de CI/CD para compilação e publicação automática da imagem no GitHub Container Registry.
