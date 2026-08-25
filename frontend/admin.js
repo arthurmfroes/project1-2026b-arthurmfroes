@@ -17,10 +17,10 @@ function genericModal(initialOpen = false) {
 }
 
 // Componente Genérico e Reutilizável de Seletor de Categoria (Enum + Custom em Estética Neo-Brutalista)
-function categorySelector(initialValue = 'Desenvolvimento Web', availableCategories = []) {
+function categorySelector(initialValue = '', availableCategories = []) {
   return {
-    value: initialValue || 'Desenvolvimento Web',
-    query: initialValue || 'Desenvolvimento Web',
+    value: initialValue || '',
+    query: initialValue || '',
     isOpen: false,
     
     // Categorias padrão do Enum
@@ -35,14 +35,26 @@ function categorySelector(initialValue = 'Desenvolvimento Web', availableCategor
     ],
     
     get allCategories() {
-      const merged = new Set([...this.presetCategories, ...(availableCategories || [])]);
-      return Array.from(merged);
+      const list = [...this.presetCategories];
+      const extra = Array.isArray(availableCategories) ? availableCategories : [];
+      extra.forEach(c => {
+        if (c && typeof c === 'string' && !list.includes(c)) {
+          list.push(c);
+        }
+      });
+      return list;
     },
 
     get filteredCategories() {
       if (!this.query || this.query.trim() === '') return this.allCategories;
       const q = this.query.toLowerCase().trim();
       return this.allCategories.filter(c => c.toLowerCase().includes(q));
+    },
+
+    get isCustomCategory() {
+      if (!this.query || this.query.trim() === '') return false;
+      const q = this.query.toLowerCase().trim();
+      return !this.allCategories.some(c => c.toLowerCase() === q);
     },
 
     selectCategory(cat) {
@@ -259,24 +271,22 @@ function adminApp() {
       this.editingChallengeId = null;
       this.editorMode = 'visual';
       this.chTitle = '';
-      this.chCategory = 'Desenvolvimento Web';
+      this.chCategory = '';
       this.chDate = new Date().toISOString().split('T')[0];
       this.chTime = 180;
       this.chDifficulty = 'Iniciante';
       this.chMsg = '';
 
-      this.builderIntroText = 'Uma aplicação web distribui seu funcionamento entre o cliente e o servidor.';
-      this.builderCodeSnippet = '<button id="load">Carregar</button>';
-      this.builderCodeLang = 'html';
-      this.builderQuestionPrompt = 'Qual opção descreve o comportamento correto?';
+      this.builderIntroText = '';
+      this.builderCodeSnippet = '';
+      this.builderCodeLang = 'javascript';
+      this.builderQuestionPrompt = '';
       this.builderOptions = [
-        { id: 'a', label: 'O código é executado no navegador.' },
-        { id: 'b', label: 'O código é executado no banco de dados.' },
-        { id: 'c', label: 'A página recarrega inteira.' },
-        { id: 'd', label: 'Nenhuma das anteriores.' }
+        { id: 'a', label: '' },
+        { id: 'b', label: '' }
       ];
       this.builderCorrectOptionId = 'a';
-      this.builderFeedbackText = 'Resposta correta: A.';
+      this.builderFeedbackText = '';
 
       this.syncVisualToJson();
     },

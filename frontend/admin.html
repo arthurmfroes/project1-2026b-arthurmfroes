@@ -444,7 +444,8 @@
                   <!-- COMPONENTE SELETOR REUTILIZÁVEL DE CATEGORIA -->
                   <div class="space-y-1 relative" 
                        x-data="categorySelector(chCategory, existingCategories)" 
-                       x-init="$watch('query', val => chCategory = val); $watch('chCategory', val => { if (val !== query) query = val; })">
+                       @click.outside="isOpen = false"
+                       x-init="$watch('query', val => chCategory = val); $watch('chCategory', val => { query = val || ''; value = val || ''; })">
                     <label class="block text-xs font-black text-[#111111] uppercase">Categoria / Assunto</label>
                     
                     <div class="relative">
@@ -452,13 +453,14 @@
                         type="text" 
                         x-model="query" 
                         @focus="isOpen = true"
+                        @click="isOpen = true"
                         @input="onInput()" 
                         placeholder="Selecione ou digite uma categoria..." 
                         required
                         class="w-full px-3.5 py-2.5 rounded-xl border-2 border-[#111111] bg-white text-sm font-bold shadow-[2px_2px_0px_#111111] focus:outline-none focus:ring-2 focus:ring-[#5d3fd3]"
                       >
                       <button 
-                        @click="isOpen = !isOpen" 
+                        @click.stop="isOpen = !isOpen" 
                         type="button"
                         class="absolute right-2 top-1/2 -translate-y-1/2 px-2 py-0.5 bg-[#f5f5f2] border border-[#111111] rounded-lg text-xs font-black hover:bg-slate-200 transition-colors"
                       >
@@ -466,27 +468,36 @@
                       </button>
                     </div>
 
-                    <template x-if="isOpen && filteredCategories.length > 0">
-                      <ul 
-                        @click.away="isOpen = false"
-                        class="absolute z-50 w-full mt-1 bg-white rounded-xl border-2 border-[#111111] shadow-[6px_6px_0px_#111111] max-h-48 overflow-y-auto divide-y border-[#111111]"
-                      >
-                        <template x-for="cat in filteredCategories" :key="cat">
-                          <li>
-                            <button 
-                              type="button" 
-                              @click="selectCategory(cat)"
-                              class="w-full text-left px-3.5 py-2.5 hover:bg-[#5d3fd3] hover:text-white font-extrabold text-xs text-[#111111] transition-colors flex items-center justify-between"
-                            >
-                              <span x-text="cat"></span>
-                              <template x-if="query === cat">
-                                <span class="text-[10px] font-black uppercase bg-[#111111] text-white px-2 py-0.5 rounded border border-[#111111]">Selecionado</span>
-                              </template>
-                            </button>
-                          </li>
-                        </template>
-                      </ul>
-                    </template>
+                    <div 
+                      x-show="isOpen" 
+                      x-cloak
+                      class="absolute z-50 w-full mt-1 bg-white rounded-xl border-2 border-[#111111] shadow-[6px_6px_0px_#111111] max-h-48 overflow-y-auto divide-y border-[#111111]"
+                    >
+                      <template x-for="cat in filteredCategories" :key="cat">
+                        <button 
+                          type="button" 
+                          @click="selectCategory(cat)"
+                          class="w-full text-left px-3.5 py-2.5 hover:bg-[#5d3fd3] hover:text-white font-extrabold text-xs text-[#111111] transition-colors flex items-center justify-between"
+                        >
+                          <span x-text="cat"></span>
+                          <template x-if="query.toLowerCase().trim() === cat.toLowerCase().trim()">
+                            <span class="text-[10px] font-black uppercase bg-[#111111] text-white px-2 py-0.5 rounded border border-[#111111]">Selecionado</span>
+                          </template>
+                        </button>
+                      </template>
+
+                      <!-- Indicador de nova categoria digitada -->
+                      <template x-if="isCustomCategory">
+                        <button 
+                          type="button"
+                          @click="selectCategory(query.trim())"
+                          class="w-full text-left px-3.5 py-2.5 bg-[#f0fdf4] hover:bg-[#166534] hover:text-white font-extrabold text-xs text-[#166534] transition-colors flex items-center justify-between"
+                        >
+                          <span>+ Usar nova categoria: "<strong x-text="query.trim()"></strong>"</span>
+                          <span class="text-[10px] font-black uppercase bg-[#166534] text-white px-2 py-0.5 rounded">Nova</span>
+                        </button>
+                      </template>
+                    </div>
                   </div>
 
                   <div class="space-y-1">
