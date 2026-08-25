@@ -176,8 +176,24 @@ Achei bem mais legível e não é um framework pesado e complexo, como React, Vu
 - Documentação oficial do [Tailwind CSS](https://tailwindcss.com/)
 - Documentação do [GitHub Actions](https://docs.github.com/en/actions) e [GitHub Packages (GHCR)](https://docs.github.com/en/packages)
 
+## 🚀 Como fazer o Deploy no Railway
 
+A aplicação é distribuída como um container full-stack único publicado automaticamente no GitHub Container Registry (GHCR).
 
+- **Imagem pública (`:latest`)**: [`ghcr.io/arthurmfroes/project1-2026b-arthurmfroes:latest`](https://github.com/arthurmfroes/project1-2026b-arthurmfroes/pkgs/container/project1-2026b-arthurmfroes)
+
+### Passo a passo:
+
+1. **Criar o Serviço no Railway**:
+   - Acesse o [Railway](https://railway.app/), clique em **+ New Project** → **Deploy from Docker Image**.
+   - Informe a imagem:
+     ```text
+     ghcr.io/arthurmfroes/project1-2026b-arthurmfroes:latest
+     ```
+
+2. **Gerar Domínio Público**:
+   - Na aba **Settings** → **Networking**, clique em **Generate Domain**.
+   - Acesse a URL gerada para usar a aplicação.
 
 ---
 Projeto entregue para a disciplina de [Desenvolvimento de Software para a Web](http://github.com/andreainfufsm/elc1090-2026b) em 2026b
