@@ -168,6 +168,7 @@ function studentApp() {
       this.challengeStarted = false;
       this.hasSubmitted = false;
       this.submissionFeedback = null;
+      this.formMessage = '';
     },
 
     selectStudent(student) {
@@ -210,6 +211,7 @@ function studentApp() {
       this.challengeStarted = false;
       this.hasSubmitted = false;
       this.submissionFeedback = null;
+      this.formMessage = '';
     },
 
     async onStudentSelected() {
@@ -220,6 +222,7 @@ function studentApp() {
       this.hasSubmitted = false;
       this.timeExpired = false;
       this.submissionFeedback = null;
+      this.formMessage = '';
       if (this.timerInterval) clearInterval(this.timerInterval);
 
       // Carrega estatísticas do estudante
@@ -256,6 +259,7 @@ function studentApp() {
           this.challengeStarted = true;
           this.hasSubmitted = true;
           this.submissionFeedback = data.submission;
+          this.formMessage = '';
           if (data.submission && data.submission.user_responses) {
             this.formValues = data.submission.user_responses;
           }
@@ -350,7 +354,7 @@ function studentApp() {
         if (this.timerSeconds <= 0) {
           clearInterval(this.timerInterval);
           this.timeExpired = true;
-          this.formMessage = '⏱️ Tempo esgotado! O envio de respostas foi blocked pelo servidor.';
+          this.formMessage = '⏱️ Tempo esgotado! O envio de respostas foi bloqueado pelo servidor.';
           this.formMessageType = 'error';
         }
       }, 1000);
@@ -402,6 +406,10 @@ function studentApp() {
           if (data.already_submitted) {
             this.hasSubmitted = true;
             this.submissionFeedback = data;
+            // Exibe a mensagem de rejeição por retry / resposta já existente
+            this.formMessage = data.error || 'Você já enviou uma resposta para este desafio! Não é permitido alterar a resposta enviada.';
+            this.formMessageType = 'error';
+            return;
           }
           throw new Error(data.error || 'Erro ao enviar a resposta.');
         }
@@ -411,7 +419,7 @@ function studentApp() {
         this.hasSubmitted = true;
         this.submissionFeedback = data;
         this.submissionPayload = payload;
-        this.formMessage = 'Resposta enviada com sucesso! Sua submissão foi registrada e bloqueada para edições.';
+        this.formMessage = ''; // Limpa qualquer aviso interno no form para não poluir o card de feedback
         this.formMessageType = 'success';
 
         // Refresh stats
