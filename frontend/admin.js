@@ -1,3 +1,9 @@
+// Função Auxiliar para obter a data local no formato YYYY-MM-DD
+function getTodayLocalDate() {
+  const d = new Date();
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+}
+
 // Componente Genérico de Modal Reutilizável
 function genericModal(initialOpen = false) {
   return {
@@ -99,7 +105,7 @@ function adminApp() {
     editingChallengeId: null,
     chTitle: '',
     chCategory: 'Desenvolvimento Web',
-    chDate: new Date().toISOString().split('T')[0],
+    chDate: getTodayLocalDate(),
     chTime: 180,
     chDifficulty: 'Médio',
     chJson: '',
@@ -272,7 +278,7 @@ function adminApp() {
       this.editorMode = 'visual';
       this.chTitle = '';
       this.chCategory = '';
-      this.chDate = new Date().toISOString().split('T')[0];
+      this.chDate = getTodayLocalDate();
       this.chTime = 180;
       this.chDifficulty = 'Iniciante';
       this.chMsg = '';
@@ -370,7 +376,7 @@ function adminApp() {
           }
         },
         feedback: {
-          messages: this.builderFeedbackText.trim() ? [this.builderFeedbackText.trim()] : ['Resposta gravada com sucesso!']
+          messages: this.builderFeedbackText.trim() ? [this.builderFeedbackText.trim()] : []
         }
       };
 
@@ -410,7 +416,10 @@ function adminApp() {
         }
 
         if (parsed.feedback && Array.isArray(parsed.feedback.messages)) {
-          this.builderFeedbackText = parsed.feedback.messages.join('\n');
+          const msgs = parsed.feedback.messages.filter(m => m && m !== 'Resposta gravada com sucesso!');
+          this.builderFeedbackText = msgs.join('\n');
+        } else {
+          this.builderFeedbackText = '';
         }
       } catch (e) {
         console.error('JSON malformatado para modo visual:', e);
@@ -426,7 +435,7 @@ function adminApp() {
       this.editingChallengeId = ch.id;
       this.chTitle = ch.title;
       this.chCategory = ch.category || 'Geral';
-      this.chDate = ch.date || new Date().toISOString().split('T')[0];
+      this.chDate = ch.date || getTodayLocalDate();
       this.chTime = ch.time_limit_seconds !== undefined ? ch.time_limit_seconds : 180;
       this.chDifficulty = ch.difficulty || 'Médio';
       this.chMsg = '';
@@ -437,7 +446,6 @@ function adminApp() {
         this.syncJsonToVisual();
       } catch (e) {
         this.chJson = ch.challenge_json;
-        this.editorMode = 'json';
       }
 
       this.challengeModal.open(`✏️ Editar Desafio: ${ch.title}`);
@@ -446,25 +454,23 @@ function adminApp() {
     async saveChallenge() {
       this.chMsg = '';
 
-      if (this.editorMode === 'visual') {
-        if (!this.chTitle.trim()) {
-          this.chMsg = 'Informe o título do desafio!';
-          this.chMsgType = 'error';
-          return;
-        }
-        if (!this.builderQuestionPrompt.trim()) {
-          this.chMsg = 'Informe a pergunta do desafio!';
-          this.chMsgType = 'error';
-          return;
-        }
-        this.syncVisualToJson();
+      if (!this.chTitle.trim()) {
+        this.chMsg = 'Informe o título do desafio!';
+        this.chMsgType = 'error';
+        return;
       }
+      if (!this.builderQuestionPrompt.trim()) {
+        this.chMsg = 'Informe a pergunta do desafio!';
+        this.chMsgType = 'error';
+        return;
+      }
+      this.syncVisualToJson();
 
       let parsed;
       try {
         parsed = JSON.parse(this.chJson);
       } catch (e) {
-        this.chMsg = 'O conteúdo do desafio deve ser um JSON válido!';
+        this.chMsg = 'Erro ao processar estrutura do desafio.';
         this.chMsgType = 'error';
         return;
       }

@@ -94,7 +94,10 @@ function initDb() {
   // Seed sample challenge if empty
   const challengeCount = db.prepare('SELECT COUNT(*) as count FROM challenges').get().count;
   if (challengeCount === 0) {
-    const today = new Date().toISOString().split('T')[0];
+    const timeZone = 'America/Sao_Paulo';
+    const now = new Date();
+    const tomorrowDate = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    const tomorrow = new Intl.DateTimeFormat('sv-SE', { timeZone }).format(tomorrowDate);
     
     const sampleChallengeObj = {
       id: "web-client-server-fetch",
@@ -104,8 +107,7 @@ function initDb() {
         version: 1,
         title: "O que acontece após o clique?",
         category: "Desenvolvimento Web",
-        date: today,
-        topics: ["desenvolvimento web", "cliente e servidor", "HTTP", "fetch"],
+        date: tomorrow,
         difficulty: "Iniciante",
         time_limit_seconds: 180,
         intro: [
@@ -172,7 +174,7 @@ function initDb() {
       'web-client-server-fetch',
       'O que acontece após o clique?',
       'Desenvolvimento Web',
-      today,
+      tomorrow,
       'Iniciante',
       180,
       JSON.stringify(sampleChallengeObj)

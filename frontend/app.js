@@ -223,6 +223,7 @@ function studentApp() {
       this.timeExpired = false;
       this.submissionFeedback = null;
       this.formMessage = '';
+      this.formValues = {};
       if (this.timerInterval) clearInterval(this.timerInterval);
 
       // Carrega estatísticas do estudante
@@ -383,10 +384,12 @@ function studentApp() {
       this.formMessage = '';
       this.submitting = true;
 
+      const chId = this.currentChallenge.challenge_id || this.currentChallenge.id;
+
       const payload = {
-        challenge_id: this.currentChallenge.challenge_id || this.currentChallenge.id,
+        challenge_id: chId,
         challenge_version: this.currentChallenge.version || 1,
-        challenge_key: this.currentChallenge.id || 'ch_01',
+        challenge_key: chId,
         student_id: this.selectedStudent?.student_id || '',
         student_display_name: this.selectedStudent?.display_name || name,
         student_source: this.selectedStudent ? 'listed' : 'manual',

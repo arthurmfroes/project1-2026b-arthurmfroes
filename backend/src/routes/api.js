@@ -35,9 +35,20 @@ function getConfigObject() {
   return config;
 }
 
+function getTodayDateString() {
+  try {
+    const tzRow = db.prepare("SELECT value FROM config WHERE key = 'timezone'").get();
+    const timeZone = tzRow ? tzRow.value : 'America/Sao_Paulo';
+    return new Intl.DateTimeFormat('sv-SE', { timeZone }).format(new Date());
+  } catch (e) {
+    const now = new Date();
+    return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+  }
+}
+
 // Helper to get active challenge for today + next challenge date
 function getTodayChallengeInfo() {
-  const today = new Date().toISOString().split('T')[0];
+  const today = getTodayDateString();
 
   const matchRow = db.prepare(`
     SELECT * FROM challenges 
@@ -50,6 +61,8 @@ function getTodayChallengeInfo() {
     try {
       const parsed = JSON.parse(matchRow.challenge_json);
       currentChallenge = parsed.challenge ? parsed.challenge : parsed;
+      currentChallenge.id = matchRow.id;
+      currentChallenge.challenge_id = matchRow.id;
       currentChallenge.category = matchRow.category || currentChallenge.category || 'Geral';
       currentChallenge.date = matchRow.date || currentChallenge.date || today;
       currentChallenge.time_limit_seconds = matchRow.time_limit_seconds !== undefined ? matchRow.time_limit_seconds : (currentChallenge.time_limit_seconds || 0);

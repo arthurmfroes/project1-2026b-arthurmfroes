@@ -199,12 +199,9 @@
 
                       <h2 class="text-2xl sm:text-4xl font-black tracking-tight text-[#111111]" x-text="currentChallenge.title"></h2>
 
-                      <!-- CATEGORIAS / TAGS -->
+                      <!-- CATEGORIA ÚNICA / DIFICULDADE -->
                       <div class="flex items-center flex-wrap gap-2 pt-1">
                         <span class="px-3 py-1 bg-[#e0e7ff] text-[#3730a3] font-bold rounded-lg border border-[#111111] text-xs" x-text="currentChallenge.category || 'Geral'"></span>
-                        <template x-for="topic in (currentChallenge.topics || [])" :key="topic">
-                          <span class="px-2.5 py-1 bg-[#f1f5f9] text-[#475569] font-medium rounded-lg text-xs" x-text="topic"></span>
-                        </template>
                         <span class="px-3 py-1 bg-[#fef3c7] text-[#92400e] font-bold rounded-lg border border-[#111111] text-xs" x-text="currentChallenge.difficulty || 'Médio'"></span>
                       </div>
                     </div>

@@ -76,6 +76,8 @@ router.post('/challenges', authMiddleware, (req, res) => {
 
   const existing = db.prepare('SELECT * FROM challenges WHERE id = ?').get(challengeId);
 
+  const finalTimeLimit = (time_limit_seconds !== undefined && !isNaN(Number(time_limit_seconds))) ? Math.max(0, Number(time_limit_seconds)) : 300;
+
   if (existing) {
     db.prepare(`
       UPDATE challenges SET
@@ -88,7 +90,7 @@ router.post('/challenges', authMiddleware, (req, res) => {
       category || 'Geral',
       date || null,
       difficulty || 'Médio',
-      Number(time_limit_seconds) || 300,
+      finalTimeLimit,
       active !== undefined ? (active ? 1 : 0) : 1,
       jsonStr,
       challengeId
@@ -104,7 +106,7 @@ router.post('/challenges', authMiddleware, (req, res) => {
       category || 'Geral',
       date || null,
       difficulty || 'Médio',
-      Number(time_limit_seconds) || 300,
+      finalTimeLimit,
       active !== undefined ? (active ? 1 : 0) : 1,
       jsonStr
     );
@@ -145,16 +147,17 @@ router.post('/students', authMiddleware, (req, res) => {
 
   let finalId = student_id ? student_id.trim() : '';
   if (!finalId) {
-    // Generate new ID like st_05, st_06 etc.
-    const lastRow = db.prepare("SELECT student_id FROM students WHERE student_id LIKE 'st_%' ORDER BY student_id DESC LIMIT 1").get();
-    let nextNum = 1;
-    if (lastRow && lastRow.student_id) {
-      const match = lastRow.student_id.match(/st_(\d+)/);
+    // Busca todos os IDs existentes com padrão st_XX para calcular o próximo número sequencial
+    const rows = db.prepare("SELECT student_id FROM students WHERE student_id LIKE 'st_%'").all();
+    let maxNum = 0;
+    rows.forEach(r => {
+      const match = r.student_id.match(/st_(\d+)/);
       if (match) {
-        nextNum = parseInt(match[1], 10) + 1;
+        const num = parseInt(match[1], 10);
+        if (!isNaN(num) && num > maxNum) maxNum = num;
       }
-    }
-    finalId = `st_${String(nextNum).padStart(2, '0')}`;
+    });
+    finalId = `st_${String(maxNum + 1).padStart(2, '0')}`;
   }
 
   const existing = db.prepare('SELECT * FROM students WHERE student_id = ?').get(finalId);
